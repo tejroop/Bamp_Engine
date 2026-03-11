@@ -6,6 +6,7 @@ import ElasticityChart from './components/ElasticityChart'
 import PriceSimulator from './components/PriceSimulator'
 import MethodologyPanel from './components/MethodologyPanel'
 import MarketSelector from './components/MarketSelector'
+import AnomalyDetector from './components/AnomalyDetector'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -49,8 +50,11 @@ function App() {
               <h1 className="text-4xl font-bold mb-2">BAMP Market Response Engine</h1>
               <p className="text-orange-300">Emma Sleep - Strategic Pricing & Market Analysis</p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-300">Market Intelligence Platform</p>
+            <div className="flex items-center gap-4">
+              <AnomalyDetector market={selectedMarket} />
+              <div className="text-right">
+                <p className="text-sm text-gray-300">Market Intelligence Platform</p>
+              </div>
             </div>
           </div>
           
