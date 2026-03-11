@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine, Cell, ComposedChart, Line
 } from 'recharts';
+import InsightCard from './InsightCard';
 
 /**
  * IncrementalityChart Component
@@ -174,14 +175,14 @@ export default function IncrementalityChart({ market = 'HK' }) {
         </div>
       </div>
 
-      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-800">
-          <span className="font-bold">Portfolio Recommendation:</span> After product replacement and implementing the incrementality model's
-          recommendations, the pillow portfolio reduces from <span className="font-bold">12 → 5 pillows</span>, focusing on
-          EPWAM, EPWCF, EPWCM, EPWGM, and EPWGF. Combined incremental revenue: <span className="font-bold text-green-700">€3,595K</span> with
-          gross margin of <span className="font-bold text-green-700">€1,780K</span>.
-        </p>
-      </div>
+      {/* AI Insight Narrator */}
+      <InsightCard
+        headline={`Portfolio has ${positiveCount} incremental drivers and ${negativeCount} cannibalization risks — optimizing from 12 to 5 SKUs unlocks €3,595K revenue`}
+        body={`The incrementality model reveals that only ${positiveCount} of 13 pillow SKUs (EPWDD at β₂=+1.62 and EPWGM at β₂=+3.56) genuinely drive companion mattress sales. Meanwhile, ${negativeCount} products actively cannibalize the portfolio — EPWAF (β₂=-5.40) and EPWFT (β₂=-5.06) are the worst offenders, each destroying over 5% of companion demand per 1% increase in their share. The remaining ${neutralCount} products show no statistically significant portfolio effect at the 95% confidence level.`}
+        recommendation={`Immediately discontinue EPWFT (Travel Pillow) and EPWAF (Adj. Foam) — they have the highest cannibalization coefficients and lowest sales volumes. Redirect marketing budget toward EPWGM (Gel Grid Micro, β₂=+3.56), which generates €2,963K incremental net revenue and €1,623K gross margin. This single product is responsible for 82% of the portfolio's total incremental value.`}
+        comparison={`The recommended 12→5 SKU reduction eliminates products that collectively destroy more value than they create. The 5 retained SKUs (EPWAM, EPWCF, EPWCM, EPWGM, EPWGF) capture €3,595K incremental revenue at €1,780K gross margin — a higher yield from fewer products.`}
+        sentiment="positive"
+      />
     </div>
   );
 }

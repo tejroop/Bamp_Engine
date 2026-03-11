@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
+import InsightCard from './InsightCard';
 
 /**
  * Dashboard Component — Real Data from CSV Sources
@@ -220,8 +221,29 @@ export default function Dashboard({ market = 'HK' }) {
         </div>
       </div>
 
+      {/* AI Insight Narrator */}
+      <InsightCard
+        headline={
+          market === 'HK'
+            ? `HK market shows strong attachment (${d.avg_attachment_rate}%) with inelastic demand — premium positioning is viable`
+            : `TW market drives 4.3x more volume than HK but with lower attachment (${d.avg_attachment_rate}%) and elastic demand`
+        }
+        body={
+          market === 'HK'
+            ? `Hong Kong generated ${d.symbol}${(d.total_revenue / 1000000).toFixed(1)}M from ${d.total_orders.toLocaleString()} orders over ${d.months_processed} months. The ${d.avg_attachment_rate}% average attachment rate is exceptionally high, suggesting strong cross-sell effectiveness. With an elasticity of ${d.elasticity} (inelastic), HK consumers are less price-sensitive, providing room for premium pricing. The recent trend shows attachment rates climbing from 42.8% in Oct 2024 to 64.2% in Mar 2025 — a 50% improvement that warrants investigation into what drove this acceleration.`
+            : `Taiwan generated ${d.symbol}${(d.total_revenue / 1000000).toFixed(1)}M from ${d.total_orders.toLocaleString()} orders — over 4x the volume of Hong Kong. However, the ${d.avg_attachment_rate}% attachment rate is 18.6pp lower than HK, and the elastic demand (${d.elasticity}) means price increases directly erode volume. Notable volatility in recent attachment rates (ranging from 31.9% in Feb to 85.7% in Mar 2025) suggests promotional activity or seasonal factors are heavily influencing cross-sell behavior.`
+        }
+        recommendation={
+          market === 'HK'
+            ? `Investigate the drivers behind the Oct 2024-Mar 2025 attachment rate acceleration. If replicable (e.g., bundle offers, checkout UX changes), apply the same tactics to Taiwan to close the 18.6pp gap.`
+            : `Stabilize TW attachment rates by reducing dependence on promotional spikes. The 53.8pp swing between Feb and Mar 2025 suggests over-reliance on campaigns rather than structural cross-sell optimization.`
+        }
+        comparison={`HK (${KPI_DATA.HK.total_orders.toLocaleString()} orders, ${KPI_DATA.HK.avg_attachment_rate}% attach) vs TW (${KPI_DATA.TW.total_orders.toLocaleString()} orders, ${KPI_DATA.TW.avg_attachment_rate}% attach): Taiwan has volume dominance but HK has higher-quality conversions. Combined, the two markets represent ${(KPI_DATA.HK.total_orders + KPI_DATA.TW.total_orders).toLocaleString()} orders and over $43M in revenue.`}
+        sentiment={market === 'HK' ? 'positive' : 'neutral'}
+      />
+
       {/* Data Source Attribution */}
-      <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+      <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <p className="text-xs text-gray-500">
           <span className="font-semibold">Data Sources:</span> HK 202301-202503.csv (32K rows),
           TW 202301-202503.csv (180K rows), TW&HK 202504-202512 Order data.csv (59K rows),

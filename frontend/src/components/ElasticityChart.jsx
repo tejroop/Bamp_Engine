@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine, ReferenceArea
 } from 'recharts';
+import InsightCard from './InsightCard';
 
 /**
  * ElasticityChart Component
@@ -56,6 +57,33 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function ElasticityChart({ market = 'HK' }) {
   const avgHK = (ELASTICITY_DATA.reduce((s, d) => s + d.HK, 0) / 12).toFixed(2);
   const avgTW = (ELASTICITY_DATA.reduce((s, d) => s + d.TW, 0) / 12).toFixed(2);
+
+  // AI Insight Narrator — dynamic insights computed from actual data
+  const insight = useMemo(() => {
+    const hk = parseFloat(avgHK);
+    const tw = parseFloat(avgTW);
+    const hkAbs = Math.abs(hk);
+    const twAbs = Math.abs(tw);
+    const hkClass = hkAbs > 1 ? 'elastic' : 'inelastic';
+    const twClass = twAbs > 1 ? 'elastic' : 'inelastic';
+    const q4HK = Math.abs((ELASTICITY_DATA[10].HK + ELASTICITY_DATA[11].HK) / 2);
+    const q2HK = Math.abs((ELASTICITY_DATA[3].HK + ELASTICITY_DATA[4].HK) / 2);
+    const seasonalShift = ((q4HK - q2HK) / q2HK * 100).toFixed(0);
+
+    return {
+      headline: market === 'HK'
+        ? `Hong Kong demand is ${hkClass} (avg ${avgHK}) — a 10% price increase would reduce volume by only ${(hkAbs * 10).toFixed(1)}%`
+        : `Taiwan demand is ${twClass} (avg ${avgTW}) — a 10% price increase would reduce volume by ${(twAbs * 10).toFixed(1)}%`,
+      body: market === 'HK'
+        ? `With an average elasticity of ${avgHK}, HK consumers show relatively low price sensitivity. This means Emma Sleep has pricing power in this market — modest price increases will not significantly erode demand. However, elasticity rises ${seasonalShift}% during Q4 (Nov-Dec), when competitive holiday discounting makes consumers temporarily more price-aware.`
+        : `With an average elasticity of ${avgTW}, TW consumers respond strongly to price changes. Every 1% price increase leads to approximately ${twAbs.toFixed(2)}% demand reduction. This elastic demand profile means competitive pricing is critical in Taiwan, particularly during promotional seasons when consumers actively comparison-shop.`,
+      recommendation: market === 'HK'
+        ? `Pursue premium pricing in HK. The inelastic demand supports a 5-8% price uplift with minimal volume loss, yielding an estimated net revenue gain of ${(hkAbs < 1 ? (5 * (1 - hkAbs) * 100).toFixed(0) : '2-3')}% on mattress sales.`
+        : `Hold or reduce prices in TW. Elastic demand means discounts drive disproportionate volume gains. A targeted 10% promotional discount could increase unit sales by ~${(twAbs * 10).toFixed(0)}%, potentially offsetting the margin compression through volume.`,
+      comparison: `HK (${avgHK}) vs TW (${avgTW}): Hong Kong is ${(twAbs - hkAbs).toFixed(2)} points less elastic than Taiwan. This divergence suggests fundamentally different consumer segments — HK buyers prioritize brand/quality, while TW buyers are more price-driven. Consider differentiated pricing strategies across markets.`,
+      sentiment: market === 'HK' ? 'positive' : 'negative',
+    };
+  }, [market, avgHK, avgTW]);
 
   return (
     <div>
@@ -147,14 +175,14 @@ export default function ElasticityChart({ market = 'HK' }) {
         </div>
       </div>
 
-      <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-sm text-amber-800">
-          <span className="font-bold">Key Insight:</span> TW shows consistently elastic demand (|ε| &gt; 1),
-          meaning price changes significantly impact quantity sold. HK is generally inelastic, suggesting room for
-          premium pricing strategies. Note that elasticity increases during Q4 (Nov-Dec) across both markets due to
-          competitive holiday discounting.
-        </p>
-      </div>
+      {/* AI Insight Narrator */}
+      <InsightCard
+        headline={insight.headline}
+        body={insight.body}
+        recommendation={insight.recommendation}
+        comparison={insight.comparison}
+        sentiment={insight.sentiment}
+      />
     </div>
   );
 }

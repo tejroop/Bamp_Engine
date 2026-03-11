@@ -3,6 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine
 } from 'recharts';
+import InsightCard from './InsightCard';
 
 /**
  * PriceSimulator Component
@@ -295,17 +296,29 @@ export default function PriceSimulator({ market = 'HK' }) {
             </div>
           </div>
 
-          {/* Insight */}
-          <div className={`p-4 rounded-lg border ${simulation.revenueChange >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-            <p className={`text-sm ${simulation.revenueChange >= 0 ? 'text-green-800' : 'text-red-800'}`}>
-              <span className="font-bold">Simulation Insight: </span>
-              At €{mattressPrice} with €{(marketingSpend/1000).toFixed(0)}K marketing spend
-              {competitorGap !== 0 && ` and ${competitorGap > 0 ? '+' : ''}${competitorGap}% competitor gap`},
-              the model predicts a {formatPercent(simulation.attachmentRate)} attachment rate
-              yielding {formatCurrency(simulation.totalRevenue)} total monthly revenue
-              ({simulation.revenueChange >= 0 ? '+' : ''}{formatCurrency(simulation.revenueChange)} vs baseline).
-            </p>
-          </div>
+          {/* AI Insight Narrator */}
+          <InsightCard
+            headline={
+              simulation.revenueChange >= 0
+                ? `This configuration adds ${formatCurrency(simulation.revenueChange)} monthly revenue (+${simulation.revenueChangePct.toFixed(1)}% vs optimum)`
+                : `Warning: this pricing destroys ${formatCurrency(Math.abs(simulation.revenueChange))} monthly revenue (${simulation.revenueChangePct.toFixed(1)}% vs optimum)`
+            }
+            body={
+              mattressPrice < 350
+                ? `At €${mattressPrice}, you are significantly below the €400 interior optimum. While demand is higher (${simulation.predictedDemand.toLocaleString()} units due to the -1.24 elasticity), the lower per-unit revenue and reduced attachment rate (${simulation.attachmentRate.toFixed(1)}%) more than offset the volume gain. The attachment rate bell curve shows that consumers at lower price points are less likely to add accessories.`
+                : mattressPrice > 500
+                ? `At €${mattressPrice}, you are above the interior optimum. The attachment rate has dropped to ${simulation.attachmentRate.toFixed(1)}% (from 32% at €400) because higher mattress prices create psychological resistance to adding accessories. Simultaneously, demand has fallen to ${simulation.predictedDemand.toLocaleString()} units. This double penalty — lower attach rate AND lower volume — compounds the revenue loss.`
+                : `At €${mattressPrice}, you are ${mattressPrice === 400 ? 'at' : 'near'} the interior optimum of €400. The attachment rate of ${simulation.attachmentRate.toFixed(1)}% is ${mattressPrice === 400 ? 'at maximum' : 'close to the 32% peak'}, and demand of ${simulation.predictedDemand.toLocaleString()} units is healthy. ${marketingSpend > 50000 ? `The additional €${((marketingSpend - 50000)/1000).toFixed(0)}K marketing spend above baseline is contributing +${((marketingSpend - 50000) / 1000 * 0.05).toFixed(1)}pp to the attachment rate.` : marketingSpend < 50000 ? `Note: marketing spend is €${((50000 - marketingSpend)/1000).toFixed(0)}K below baseline, dragging the attachment rate down by ${((50000 - marketingSpend) / 1000 * 0.05).toFixed(1)}pp.` : ''}`
+            }
+            recommendation={
+              simulation.revenueChange < -20000
+                ? `Move the price closer to €400 to recover revenue. The current configuration leaves €${Math.abs(simulation.revenueChange).toLocaleString()} on the table monthly.`
+                : simulation.attachmentRate < 25
+                ? `Focus on increasing the attachment rate — consider bundled offers or targeted accessory promotions to push attach rate above 25%.`
+                : `This is a strong configuration. Fine-tune marketing spend to maximize ROI — each additional €1K above baseline adds 0.05pp to the attachment rate.`
+            }
+            sentiment={simulation.revenueChange >= 0 ? 'positive' : 'negative'}
+          />
         </div>
       </div>
     </div>
