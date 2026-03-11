@@ -1,0 +1,6 @@
+prophet
+pandas
+numpy
+scipy
+flask
+flask-cors
