@@ -7,6 +7,7 @@ import PriceSimulator from './components/PriceSimulator'
 import MethodologyPanel from './components/MethodologyPanel'
 import MarketSelector from './components/MarketSelector'
 import AnomalyDetector from './components/AnomalyDetector'
+import ChatBot from './components/ChatBot'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -97,6 +98,9 @@ function App() {
           <p>BAMP Market Response Engine | Emma Sleep © 2024 | Powered by Advanced Analytics</p>
         </div>
       </footer>
+
+      {/* Conversational Analytics Chatbot (F3) */}
+      <ChatBot market={selectedMarket} />
     </div>
   )
 }
