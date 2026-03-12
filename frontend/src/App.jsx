@@ -8,6 +8,10 @@ import MethodologyPanel from './components/MethodologyPanel'
 import MarketSelector from './components/MarketSelector'
 import AnomalyDetector from './components/AnomalyDetector'
 import ChatBot from './components/ChatBot'
+import ScenarioLab from './components/ScenarioLab'
+import CompetitiveRadar from './components/CompetitiveRadar'
+import DiscountOptimizer from './components/DiscountOptimizer'
+import BundleRecommender from './components/BundleRecommender'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -19,6 +23,10 @@ function App() {
     { id: 'incrementality', label: 'Incrementality' },
     { id: 'elasticity', label: 'Elasticity' },
     { id: 'simulator', label: 'Price Simulator' },
+    { id: 'scenario', label: 'Scenario Lab' },
+    { id: 'competitive', label: 'Competitive Intel' },
+    { id: 'discount', label: 'Discount Lab' },
+    { id: 'bundles', label: 'Bundle Lab' },
     { id: 'methodology', label: 'Methodology' },
   ]
 
@@ -34,6 +42,14 @@ function App() {
         return <ElasticityChart market={selectedMarket} />
       case 'simulator':
         return <PriceSimulator market={selectedMarket} />
+      case 'scenario':
+        return <ScenarioLab market={selectedMarket} />
+      case 'competitive':
+        return <CompetitiveRadar market={selectedMarket} />
+      case 'discount':
+        return <DiscountOptimizer market={selectedMarket} />
+      case 'bundles':
+        return <BundleRecommender market={selectedMarket} />
       case 'methodology':
         return <MethodologyPanel />
       default:
