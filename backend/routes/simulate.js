@@ -8,7 +8,7 @@ const incr = require('../models/incrementality');
 router.post('/price', async (req, res) => {
   try {
     const {
-      market = 'DE',
+      market = 'HK',
       mattress_price = 400,
       marketing_spend = 50000,
       competitor_gap = 0
@@ -35,7 +35,7 @@ router.post('/price', async (req, res) => {
 // POST /api/simulate-portfolio
 router.post('/portfolio', async (req, res) => {
   try {
-    const { market = 'DE', remove_products = [] } = req.body;
+    const { market = 'HK', remove_products = [] } = req.body;
     const results = remove_products.map(sku => {
       const beta = incr.getBetaCoefficient(sku);
       return {
@@ -63,10 +63,10 @@ router.get('/elasticity/:market', async (req, res) => {
       res.json(response.data);
     } catch (pythonError) {
       // JS fallback: calculate elasticity from pre-set coefficients
-      const marketCoeffs = { DE: -1.24, HK: -0.95, TW: -1.08 };
+      const marketCoeffs = { HK: -0.95, TW: -1.08 };
       const k = marketCoeffs[market] || -1.0;
-      const avgPrice = market === 'DE' ? 400 : market === 'HK' ? 3100 : 12000;
-      const avgQty = market === 'DE' ? 1500 : market === 'HK' ? 420 : 610;
+      const avgPrice = market === 'HK' ? 3100 : 12000;
+      const avgQty = market === 'HK' ? 420 : 610;
       const elasticity = incr.calculatePriceElasticity(k, avgPrice, avgQty);
       res.json({
         source: 'js-fallback',

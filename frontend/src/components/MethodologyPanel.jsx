@@ -63,7 +63,7 @@ export default function MethodologyPanel() {
       <Section title="1. Prophet Model Configuration" defaultOpen={true}>
         <p>
           We use Facebook Prophet for time series forecasting of product demand across
-          the DE, HK, and TW markets. Prophet was selected for its decomposable model
+          the HK and TW markets. Prophet was selected for its decomposable model
           structure (trend + seasonality + regressors) and interpretability.
         </p>
 
@@ -263,8 +263,7 @@ export default function MethodologyPanel() {
           <div className="flex items-start gap-2">
             <span className="text-red-500 font-bold mt-0.5">✗</span>
             <p><strong>Weak RMSE improvement:</strong> Adding lead time as a regressor showed mixed
-            results: marginal improvement in DE and FR, but degradation in UK. The improvement was
-            neither consistent nor significant.</p>
+            results across markets. The improvement was neither consistent nor significant.</p>
           </div>
 
           <div className="flex items-start gap-2">

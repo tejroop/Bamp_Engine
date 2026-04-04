@@ -26,15 +26,15 @@ import InsightCard from './InsightCard'
 // Generate logistic-transformed attachment curves from notebook betas
 function generateHKCurve() {
   const points = [];
-  // HK: logistic model with β = +0.50 on normalized price
-  // P(acc|mattress) ≈ logistic(α + 0.50 × ln(price/median))
-  // At median price (~€500), P ≈ 41% (notebook baseline)
-  const medianPrice = 500;
-  const beta = 0.50;
-  const intercept = -0.36; // calibrated so logistic(intercept) ≈ 0.41
+  // HK: logistic model from notebook Cell 54
+  // P(acc|mattress) = logistic(const + β × log(mattress_price))
+  // const = -3.5607, β = +0.4998
+  // At median price (€566.83): z = -3.5607 + 0.4998*log(566.83) = -0.39 → P ≈ 40.3%
+  const beta = 0.4998;
+  const intercept = -3.5607;
 
-  for (let p = 200; p <= 900; p += 25) {
-    const z = intercept + beta * Math.log(p / medianPrice);
+  for (let p = 200; p <= 1300; p += 25) {
+    const z = intercept + beta * Math.log(p);
     const rate = 100 / (1 + Math.exp(-z)); // logistic
     points.push({ price: p, rate: +rate.toFixed(1) });
   }
@@ -42,20 +42,21 @@ function generateHKCurve() {
 }
 
 function generateTWCurves() {
-  // TW: three segment-specific logistic models
+  // TW: three segment-specific logistic models from notebook Cell 56
+  // z = const + beta * log(mattress_price)
+  // Intercepts back-calculated from segment attach rates and median prices
   const segments = {
-    Entry:   { beta: -1.37, intercept: 0.80, range: [150, 300], color: '#3b82f6' },
-    Mid:     { beta: -2.86, intercept: 1.20, range: [300, 550], color: '#f97316' },
-    Premium: { beta: -0.98, intercept: 0.50, range: [550, 900], color: '#8b5cf6' },
+    Entry:   { beta: -1.3715, intercept: 8.3715, range: [190, 468], color: '#3b82f6' },
+    Mid:     { beta: -2.8556, intercept: 18.5593, range: [285, 645], color: '#f97316' },
+    Premium: { beta: -0.9842, intercept: 7.3041, range: [502, 918], color: '#8b5cf6' },
   };
 
   const points = [];
-  for (let p = 150; p <= 900; p += 25) {
+  for (let p = 150; p <= 950; p += 25) {
     const point = { price: p };
     for (const [seg, cfg] of Object.entries(segments)) {
       if (p >= cfg.range[0] && p <= cfg.range[1]) {
-        const medianSeg = (cfg.range[0] + cfg.range[1]) / 2;
-        const z = cfg.intercept + cfg.beta * Math.log(p / medianSeg);
+        const z = cfg.intercept + cfg.beta * Math.log(p);
         point[seg] = +(100 / (1 + Math.exp(-z))).toFixed(1);
       }
     }
@@ -81,7 +82,7 @@ function AttachmentRateChart({ market }) {
           </h2>
           <p className="text-sm text-gray-500">
             {isHK
-              ? 'Ridge logistic regression: β = +0.50 (positive slope — Simpson\'s paradox)'
+              ? 'Ridge logistic regression: β = +0.4998 (positive slope — Simpson\'s paradox)'
               : 'Per-segment logistic regression: Entry β=-1.37, Mid β=-2.86, Premium β=-0.98'}
           </p>
         </div>
@@ -116,7 +117,7 @@ function AttachmentRateChart({ market }) {
               labelFormatter={(v) => `€${v}`}
             />
             <ReferenceLine y={41} stroke="#94a3b8" strokeDasharray="4 4"
-              label={{ value: 'Baseline: 41%', position: 'right', fill: '#94a3b8', fontSize: 11 }} />
+              label={{ value: 'Baseline: 41.3%', position: 'right', fill: '#94a3b8', fontSize: 11 }} />
             <Line
               type="monotone"
               dataKey="rate"
@@ -188,12 +189,12 @@ function AttachmentRateChart({ market }) {
           <>
             <div className="bg-green-50 rounded-xl p-4 border border-green-200 text-center">
               <p className="text-xs text-gray-500 uppercase">Market-Level β</p>
-              <p className="text-3xl font-bold text-green-600">+0.50</p>
+              <p className="text-3xl font-bold text-green-600">+0.4998</p>
               <p className="text-xs text-gray-400">Positive slope</p>
             </div>
             <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 text-center">
               <p className="text-xs text-gray-500 uppercase">Baseline Attach</p>
-              <p className="text-3xl font-bold text-blue-600">41%</p>
+              <p className="text-3xl font-bold text-blue-600">41.3%</p>
               <p className="text-xs text-gray-400">P(acc|mattress)</p>
             </div>
             <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 text-center">
@@ -237,12 +238,12 @@ function AttachmentRateChart({ market }) {
       <InsightCard
         headline={
           isHK
-            ? "HK: Positive attachment slope (β=+0.50) — Simpson's paradox at work"
+            ? "HK: Positive attachment slope (β=+0.4998) — Simpson's paradox at work"
             : "TW: Mid-segment has steepest negative slope (β=-2.86) — most price-sensitive for cross-sell"
         }
         body={
           isHK
-            ? "The ridge logistic regression from Ch.3 reveals a counter-intuitive HK finding: the market-level attachment coefficient is positive (β=+0.50), meaning higher-priced mattresses are associated with higher accessory attachment. This is Simpson's paradox — within each price segment the betas are negative (higher price → less attachment), but premium mattress buyers are also disproportionately likely to buy accessories. The composition effect (more premium buyers in the sample) overwhelms the within-segment effect. This has a critical business implication: raising HK mattress prices will NOT harm cross-sell at market level."
+            ? "The ridge logistic regression from Ch.3 reveals a counter-intuitive HK finding: the market-level attachment coefficient is positive (β=+0.4998), meaning higher-priced mattresses are associated with higher accessory attachment. This is Simpson's paradox — within each price segment the betas are negative (higher price → less attachment), but premium mattress buyers are also disproportionately likely to buy accessories. The composition effect (more premium buyers in the sample) overwhelms the within-segment effect. This has a critical business implication: raising HK mattress prices will NOT harm cross-sell at market level."
             : "Taiwan's attachment model uses three segment-specific ridge logistic regressions based on SKU median realized price tertiles. The Mid segment (€300-€550) has the steepest negative slope (β=-2.86), meaning a 1% price increase in this range causes a 2.86% drop in the log-odds of accessory purchase. Entry (β=-1.37) and Premium (β=-0.98) are less sensitive. This segment heterogeneity was invisible in the old single-market model. The practical implication: price increases in the TW Mid segment are 2.9× more destructive to cross-sell than in the Premium segment."
         }
         recommendation={
@@ -250,7 +251,7 @@ function AttachmentRateChart({ market }) {
             ? "Exploit the positive market-level slope: pricing HK mattresses higher (toward the €524 traffic-adjusted optimum) will simultaneously increase per-unit revenue AND boost accessory attachment probability. This is rare in retail — most markets show a trade-off."
             : "Protect the Mid segment: avoid price increases in the €300-€550 range without compensating promotions. The Entry segment (optimum €365) has room for value positioning. The Premium segment (optimum €763) is least sensitive — premium buyers are committed regardless."
         }
-        comparison={`HK (β=+0.50, positive) vs TW (Entry -1.37, Mid -2.86, Premium -0.98, all negative): The two markets require opposite pricing strategies for attachment optimization. HK benefits from price increases, while TW segments — especially Mid — require careful price management.`}
+        comparison={`HK (β=+0.4998, positive) vs TW (Entry -1.37, Mid -2.86, Premium -0.98, all negative): The two markets require opposite pricing strategies for attachment optimization. HK benefits from price increases, while TW segments — especially Mid — require careful price management.`}
         sentiment={isHK ? 'positive' : 'neutral'}
       />
     </div>

@@ -11,8 +11,8 @@ import InsightCard from './InsightCard';
  * Traffic-Adjusted Revenue Optima (Ch.5):
  *   HK:          €524
  *   TW Entry:    €365
- *   TW Mid:      €511
- *   TW Premium:  €763
+ *   TW Mid:      €364
+ *   TW Premium:  €502 (lower_bound)
  *
  * Key insight from notebook: Without traffic adjustment (Ch.4), the revenue-
  * maximizing price is at the UPPER boundary (no interior optimum). Only when
@@ -31,50 +31,50 @@ const formatPercent = (val) => `${val.toFixed(1)}%`;
 // Market configurations aligned with notebook
 const MARKET_CONFIG = {
   HK: {
-    optimalPrice: 524,
-    baseDemand: 700,          // monthly mattress units at optimal
-    baseAttachRate: 41,       // % at median price
-    attachBeta: 0.50,         // positive slope
-    priceElasticity: -0.95,   // from notebook
-    medianPrice: 500,
-    attachIntercept: -0.36,
-    avgAccessoryPrice: 52,
+    optimalPrice: 524,          // Ch.5 traffic-adjusted interior optimum
+    baseDemand: 700,
+    baseAttachRate: 41.3,       // P(acc|mattress) from Cell 49
+    attachBeta: 0.4998,         // Cell 54: log_mattress_price coefficient
+    priceElasticity: -0.95,
+    medianPrice: 566.83,        // Cell 50: modelling dataset median
+    attachIntercept: -3.5607,   // Cell 54: const
+    avgAccessoryPrice: 116.22,  // Cell 61: median accessory revenue per attached order
     label: 'Hong Kong',
     segment: null,
   },
   TW_Entry: {
-    optimalPrice: 365,
+    optimalPrice: 365,          // Ch.5 interior optimum
     baseDemand: 2200,
-    baseAttachRate: 65,
-    attachBeta: -1.37,
+    baseAttachRate: 60.4,       // Cell 56: segment attach rate
+    attachBeta: -1.3715,        // Cell 56
     priceElasticity: -1.08,
-    medianPrice: 225,
-    attachIntercept: 0.80,
-    avgAccessoryPrice: 35,
+    medianPrice: 329,           // midpoint of simulation grid (190-468)
+    attachIntercept: 8.3715,    // back-calculated from attach rate & median
+    avgAccessoryPrice: 112.79,  // Cell 61: segment-level anchor
     label: 'Taiwan — Entry',
     segment: 'Entry',
   },
   TW_Mid: {
-    optimalPrice: 511,
+    optimalPrice: 364,          // Ch.5 interior optimum (was 511)
     baseDemand: 1500,
-    baseAttachRate: 58,
-    attachBeta: -2.86,        // steepest
+    baseAttachRate: 73.5,       // Cell 56: segment attach rate
+    attachBeta: -2.8556,        // Cell 56 — steepest
     priceElasticity: -1.08,
-    medianPrice: 425,
-    attachIntercept: 1.20,
-    avgAccessoryPrice: 45,
+    medianPrice: 465,           // midpoint of simulation grid (285-645)
+    attachIntercept: 18.5593,   // back-calculated
+    avgAccessoryPrice: 161.55,  // Cell 61: segment-level anchor
     label: 'Taiwan — Mid',
     segment: 'Mid',
   },
   TW_Premium: {
-    optimalPrice: 763,
+    optimalPrice: 502,          // Ch.5 lower_bound (was 763)
     baseDemand: 600,
-    baseAttachRate: 52,
-    attachBeta: -0.98,
+    baseAttachRate: 69.9,       // Cell 56: segment attach rate
+    attachBeta: -0.9842,        // Cell 56
     priceElasticity: -1.08,
-    medianPrice: 675,
-    attachIntercept: 0.50,
-    avgAccessoryPrice: 60,
+    medianPrice: 710,           // midpoint of simulation grid (502-918)
+    attachIntercept: 7.3041,    // back-calculated
+    avgAccessoryPrice: 180.40,  // Cell 61: segment-level anchor
     label: 'Taiwan — Premium',
     segment: 'Premium',
   },
@@ -96,7 +96,7 @@ export default function PriceSimulator({ market = 'HK' }) {
 
   const simulation = useMemo(() => {
     // Logistic attachment rate from Ch.3
-    const z = cfg.attachIntercept + cfg.attachBeta * Math.log(mattressPrice / cfg.medianPrice);
+    const z = cfg.attachIntercept + cfg.attachBeta * Math.log(mattressPrice);
     const logisticRate = 100 / (1 + Math.exp(-z));
 
     // Marketing spend adjustment (+0.05% per €1000 above baseline €50K)
@@ -121,7 +121,7 @@ export default function PriceSimulator({ market = 'HK' }) {
     const totalRevenue = mattressRevenue + accessoryRevenue;
 
     // Baseline at optimal
-    const baselineAccZ = cfg.attachIntercept + cfg.attachBeta * Math.log(cfg.optimalPrice / cfg.medianPrice);
+    const baselineAccZ = cfg.attachIntercept + cfg.attachBeta * Math.log(cfg.optimalPrice);
     const baselineAccRate = 100 / (1 + Math.exp(-baselineAccZ));
     const baselineAccUnits = Math.round(cfg.baseDemand * (baselineAccRate / 100));
     const baselineTotal = cfg.baseDemand * cfg.optimalPrice + baselineAccUnits * cfg.avgAccessoryPrice;
@@ -145,7 +145,7 @@ export default function PriceSimulator({ market = 'HK' }) {
   const curveData = useMemo(() => {
     const points = [];
     for (let p = 150; p <= 900; p += 25) {
-      const z = cfg.attachIntercept + cfg.attachBeta * Math.log(p / cfg.medianPrice);
+      const z = cfg.attachIntercept + cfg.attachBeta * Math.log(p);
       const rate = 100 / (1 + Math.exp(-z));
       const mktAdj = (marketingSpend - 50000) / 1000 * 0.05;
       const compAdj = -competitorGap * 0.15;

@@ -20,20 +20,20 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 // ── Real Market Data — aligned with notebook regression results ──────────────
 const MARKET_DATA = {
   HK: {
-    total_orders: 17046, total_revenue: 9470963, currency: 'HKD', symbol: 'HK$',
-    avg_attachment_rate: 41.0, attachment_beta: '+0.50', elasticity: -0.95,
-    incrementality: 3.56, optimal_price: 524, gap_beta: -1.83,
+    total_orders: 16622, total_revenue: 8840669, currency: 'HKD', symbol: 'HK$',
+    avg_attachment_rate: 41.3, attachment_beta: '+0.4998', elasticity: -0.95,
+    incrementality: 3.56, optimal_price: 524, gap_beta: -1.8251,
     top_product: 'EPWFP (Foam Pillow, 5,151 units)',
     top_mattress: 'EMAHE (941 units, avg HK$681)',
     competitors: ['Ecosa', 'Origin', 'Skyler', 'Hushhome'],
     months: 27, date_range: 'Jan 2023 – Mar 2025',
   },
   TW: {
-    total_orders: 79312, total_revenue: 33714609, currency: 'TWD', symbol: 'NT$',
+    total_orders: 74139, total_revenue: 32862634, currency: 'TWD', symbol: 'NT$',
     avg_attachment_rate: 48.6, attachment_beta: 'Entry -1.37, Mid -2.86, Premium -0.98',
     elasticity: -1.08, incrementality: 1.62,
-    optimal_price_entry: 365, optimal_price_mid: 511, optimal_price_premium: 763,
-    gap_beta: -2.32,
+    optimal_price_entry: 365, optimal_price_mid: 364, optimal_price_premium: 502,
+    gap_beta: -2.3232,
     top_product: 'EPWTW (Travel Pillow, 57,221 units)',
     top_mattress: 'EMAHE (11,549 units, avg NT$410)',
     competitors: ['Lunio', 'Lovefu', 'Mr. Living', 'Sleepy Tofu'],
@@ -55,13 +55,13 @@ const PILLOW_BETAS = {
 function simulatePrice(price, market = 'HK', marketing = 50000, gap = 0) {
   // Market-specific parameters from notebook
   const configs = {
-    HK: { optimalPrice: 524, baseDemand: 700, beta: 0.50, intercept: -0.36, medianPrice: 500, elasticity: -0.95, accPrice: 52 },
-    TW: { optimalPrice: 511, baseDemand: 1500, beta: -2.86, intercept: 1.20, medianPrice: 425, elasticity: -1.08, accPrice: 45 },
+    HK: { optimalPrice: 524, baseDemand: 700, beta: 0.4998, intercept: -3.5607, medianPrice: 566.83, elasticity: -0.95, accPrice: 116.22 },
+    TW: { optimalPrice: 364, baseDemand: 1500, beta: -2.8556, intercept: 18.5593, medianPrice: 465, elasticity: -1.08, accPrice: 161.55 },
   };
   const cfg = configs[market] || configs.HK;
 
-  // Logistic attachment model from Ch.3
-  const z = cfg.intercept + cfg.beta * Math.log(price / cfg.medianPrice);
+  // Logistic attachment model from Ch.3: z = const + β × log(price)
+  const z = cfg.intercept + cfg.beta * Math.log(price);
   const logisticRate = 100 / (1 + Math.exp(-z));
   const mktDelta = (marketing - 50000) / 1000 * 0.05;
   const compDelta = -gap * 0.15;
@@ -75,7 +75,7 @@ function simulatePrice(price, market = 'HK', marketing = 50000, gap = 0) {
   const totalRevenue = mattressRevenue + accessoryRevenue;
 
   // Baseline at optimal
-  const baseZ = cfg.intercept + cfg.beta * Math.log(cfg.optimalPrice / cfg.medianPrice);
+  const baseZ = cfg.intercept + cfg.beta * Math.log(cfg.optimalPrice);
   const baseAttach = 100 / (1 + Math.exp(-baseZ));
   const baseAccUnits = Math.round(cfg.baseDemand * (baseAttach / 100));
   const baselineTotal = cfg.baseDemand * cfg.optimalPrice + baseAccUnits * cfg.accPrice;
@@ -97,7 +97,7 @@ const INTENTS = [
         if (m) {
           const pct = parseInt(m[1]);
           const isDecrease = /decrease|lower|drop|reduce/i.test(query);
-          const baseP = market === 'HK' ? 524 : 511;
+          const baseP = market === 'HK' ? 524 : 364;
           price = Math.round(baseP * (1 + (isDecrease ? -pct : pct) / 100));
           break;
         }
@@ -109,7 +109,7 @@ const INTENTS = [
           if (m) { price = parseInt(m[1]); break; }
         }
       }
-      if (!price || price < 50 || price > 2000) price = market === 'HK' ? 524 : 511;
+      if (!price || price < 50 || price > 2000) price = market === 'HK' ? 524 : 364;
       const sim = simulatePrice(price, market);
       const direction = sim.revenueChange >= 0 ? 'gain' : 'lose';
       const absChange = Math.abs(sim.revenueChange).toLocaleString();
@@ -261,7 +261,7 @@ const INTENTS = [
           `   TW: Entry β=-1.37, Mid β=-2.86, Premium β=-0.98\n\n` +
           `**2. Revenue Optimization (Ch.4-5)**: Traffic-adjusted simulation\n` +
           `   Ch.4: No interior optimum without traffic data\n` +
-          `   Ch.5: With traffic: HK €524, TW Entry €365, Mid €511, Premium €763\n\n` +
+          `   Ch.5: With traffic: HK €524, TW Entry €365, Mid €364, Premium €502\n\n` +
           `**3. Competitor Pricing (Ch.6)**: OVB correction\n` +
           `   Gap β: HK=-1.83, TW=-2.32 (relative price matters more than absolute)\n\n` +
           `**4. Bundle Decomposition (Ch.7)**: Supply vs demand-side\n` +

@@ -30,14 +30,14 @@ const OBJECTIVES = [
 // Core simulator — aligned with notebook Ch.3-5 logistic attachment model
 // Uses HK parameters by default (market selector can be added later)
 function simulate(price, marketing, gap) {
-  // HK defaults from notebook: β=+0.50, optimal €524
+  // HK defaults from notebook Cell 54: const=-3.5607, β=+0.4998, optimal €524
   const optimalPrice = 524;
-  const beta = 0.50;
-  const intercept = -0.36;
-  const medianPrice = 500;
+  const beta = 0.4998;
+  const intercept = -3.5607;
+  const medianPrice = 566.83;
 
-  // Logistic attachment model from Ch.3
-  const z = intercept + beta * Math.log(price / medianPrice);
+  // Logistic attachment model from Ch.3: z = const + β × log(price)
+  const z = intercept + beta * Math.log(price);
   const logisticRate = 100 / (1 + Math.exp(-z));
   const mktDelta = (marketing - 50000) / 1000 * 0.05;
   const compDelta = -gap * 0.15;
@@ -48,7 +48,7 @@ function simulate(price, marketing, gap) {
   const demandMultiplier = Math.exp(priceElasticity * Math.log(price / optimalPrice));
   const predictedDemand = Math.round(baseDemand * demandMultiplier);
 
-  const avgAccessoryPrice = 52;
+  const avgAccessoryPrice = 116.22;  // Cell 61: median accessory revenue per attached order
   const accessoryUnits = Math.round(predictedDemand * (attachRate / 100));
   const accessoryRevenue = accessoryUnits * avgAccessoryPrice;
   const mattressRevenue = predictedDemand * price;

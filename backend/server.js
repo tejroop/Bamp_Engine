@@ -32,9 +32,9 @@ app.use('/api/simulate', simulateRoutes);
 
 // Direct endpoints
 app.get('/api/incrementality', (req, res) => {
-  const { market = 'DE' } = req.query;
+  const { market = 'HK' } = req.query;
   // Return all product data with beta coefficients
-  const products = incr.DE_PILLOW_BETA_COEFFICIENTS || {};
+  const products = incr.PILLOW_BETA_COEFFICIENTS || {};
   const productList = Object.entries(products).map(([sku, data]) => ({
     sku,
     ...data,
@@ -47,7 +47,6 @@ app.get('/api/incrementality', (req, res) => {
 app.get('/api/markets', (req, res) => {
   res.json({
     markets: [
-      { code: 'DE', name: 'Germany', currency: 'EUR', symbol: '\u20ac', mattresses: 7, pillows: 12, toppers: 3, duvets: 3 },
       { code: 'HK', name: 'Hong Kong', currency: 'HKD', symbol: 'HK$', mattresses: 5, pillows: 8, toppers: 2, duvets: 2 },
       { code: 'TW', name: 'Taiwan', currency: 'TWD', symbol: 'NT$', mattresses: 5, pillows: 7, toppers: 2, duvets: 2 }
     ]
@@ -55,8 +54,8 @@ app.get('/api/markets', (req, res) => {
 });
 
 app.get('/api/portfolio', (req, res) => {
-  const { market = 'DE' } = req.query;
-  const products = incr.DE_PILLOW_BETA_COEFFICIENTS || {};
+  const { market = 'HK' } = req.query;
+  const products = incr.PILLOW_BETA_COEFFICIENTS || {};
   const incremental = [];
   const cannibalizing = [];
   const neutral = [];

@@ -22,11 +22,11 @@ import InsightCard from './InsightCard';
 // Elasticity = implied from Ch.4-5 revenue simulation
 const KPI_DATA = {
   HK: {
-    total_orders: 17046,
-    total_revenue: 9470963,
+    total_orders: 16622,
+    total_revenue: 8840669,
     currency: 'HKD',
     symbol: 'HK$',
-    avg_attachment_rate: 41.0,   // P(acc|mattress) from notebook Ch.3
+    avg_attachment_rate: 41.3,   // P(acc|mattress) from notebook Ch.3 Cell 49
     attachment_slope: '+0.50',   // β positive — higher price → MORE attachment (Simpson's paradox)
     date_range: 'Jan 2023 – Mar 2025',
     months_processed: 27,
@@ -58,19 +58,19 @@ const KPI_DATA = {
     ]
   },
   TW: {
-    total_orders: 79312,
-    total_revenue: 33714609,
+    total_orders: 74139,
+    total_revenue: 32862634,
     currency: 'TWD',
     symbol: 'NT$',
-    avg_attachment_rate: 48.6,   // M+A composition rate from notebook Ch.3
+    avg_attachment_rate: 48.6,   // M+A composition share from notebook Cell 18 (38,961 of 74,139 orders)
     attachment_slope: 'negative', // β negative per segment (Entry -1.37, Mid -2.86, Premium -0.98)
     date_range: 'Jan 2023 – Mar 2025',
     months_processed: 27,
     incrementality: 1.62,
     elasticity: -1.08,
-    optimal_price_entry: 365,    // Traffic-adjusted optima (Ch.5) by segment
-    optimal_price_mid: 511,
-    optimal_price_premium: 763,
+    optimal_price_entry: 365,    // Traffic-adjusted optima (Ch.5) by segment — Cell 77
+    optimal_price_mid: 364,      // interior optimum
+    optimal_price_premium: 502,  // lower_bound
     top_product: 'EPWTW (Travel Pillow, 57,221 units)',
     top_mattress: 'EMAHE (11,549 units, avg NT$410)',
     competitors: ['Lunio', 'Lovefu', 'Mr. Living', 'Sleepy Tofu'],
@@ -239,7 +239,7 @@ export default function Dashboard({ market = 'HK' }) {
         body={
           market === 'HK'
             ? `Hong Kong generated ${d.symbol}${(d.total_revenue / 1000000).toFixed(1)}M from ${d.total_orders.toLocaleString()} orders over ${d.months_processed} months. The ${d.avg_attachment_rate}% conditional attachment rate (P(accessory|mattress)) masks a counter-intuitive finding: the market-level attachment slope is positive (β=${d.attachment_slope}), meaning higher-priced SKUs actually sell more accessories. This is Simpson's paradox — within segments the betas are negative, but composition effects (premium buyers are also heavy cross-sellers) flip the sign at market level. The traffic-adjusted revenue-maximizing price is €${d.optimal_price}. With inelastic demand (ε=${d.elasticity}), premium positioning is viable.`
-            : `Taiwan generated ${d.symbol}${(d.total_revenue / 1000000).toFixed(1)}M from ${d.total_orders.toLocaleString()} orders — over 4.6x the volume of Hong Kong. The ${d.avg_attachment_rate}% attachment rate is 7.6pp higher than HK's ${KPI_DATA.HK.avg_attachment_rate}%, but per-segment slopes are all negative (Entry β=-1.37, Mid β=-2.86, Premium β=-0.98) — higher prices suppress attachment within each segment. The Mid segment is most sensitive. Traffic-adjusted revenue optima vary by segment: Entry €${d.optimal_price_entry}, Mid €${d.optimal_price_mid}, Premium €${d.optimal_price_premium}. TW also has 35.6% pre-bundled orders (supply-side) vs 22.1% organic cross-sell (demand-side).`
+            : `Taiwan generated ${d.symbol}${(d.total_revenue / 1000000).toFixed(1)}M from ${d.total_orders.toLocaleString()} orders — over 4.6x the volume of Hong Kong. The ${d.avg_attachment_rate}% M+A composition rate is 7.3pp higher than HK's ${KPI_DATA.HK.avg_attachment_rate}% conditional attach rate, but per-segment slopes are all negative (Entry β=-1.37, Mid β=-2.86, Premium β=-0.98) — higher prices suppress attachment within each segment. The Mid segment is most sensitive. Traffic-adjusted revenue optima vary by segment: Entry €${d.optimal_price_entry}, Mid €${d.optimal_price_mid}, Premium €${d.optimal_price_premium}. TW also has 35.6% pre-bundled orders (supply-side) vs 22.1% organic cross-sell (demand-side).`
         }
         recommendation={
           market === 'HK'

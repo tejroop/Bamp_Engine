@@ -18,7 +18,7 @@
  */
 
 /**
- * Pre-trained beta coefficients for German (DE) market pillows
+ * Pre-trained beta coefficients for pillow portfolio
  * These coefficients were derived from historical transaction data
  * and represent the elasticity of each product to price and marketing changes
  * 
@@ -27,7 +27,7 @@
  * - Negative β₂: quantity decreases (unusual, might indicate premium positioning)
  * - "not significant": coefficient not statistically significant at 95% confidence
  */
-const DE_PILLOW_BETA_COEFFICIENTS = {
+const PILLOW_BETA_COEFFICIENTS = {
   // Significant coefficients
   'EPWFT': -5.0583,  // ClassicDown 80x80 - strong negative elasticity
   'EPWBF': -1.7994,  // MemoryFoam 60x80 - moderate negative elasticity
@@ -235,8 +235,7 @@ function isFrequentlyBoughtTogether(sku1, sku2, transactionData) {
   const pillow_skus = ['EPWFT', 'EPWBF', 'EPWDD', 'EPWAF', 'EPWAC', 'EPWGM',
                        'HPWFT', 'HPWBF', 'HPWDD', 'HPWAF', 'HPWAC', 'HPWGM',
                        'TPWFT', 'TPWBF', 'TPWDD', 'TPWAF', 'TPWAC', 'TPWGM'];
-  const mattress_skus = ['DEMQ001', 'DEMQ002', 'DEMQ003', 'DEMQ004',
-                         'HKMQ001', 'HKMQ002', 'HKMQ003', 'HKMQ004',
+  const mattress_skus = ['HKMQ001', 'HKMQ002', 'HKMQ003', 'HKMQ004',
                          'TWMQ001', 'TWMQ002', 'TWMQ003', 'TWMQ004'];
   
   const isPillow1 = pillow_skus.includes(sku1);
@@ -283,15 +282,11 @@ function calculateIncrementalGM(incrementalRevenue, currentMargin, fixedCostAbso
  * Get beta coefficient for a specific SKU
  * 
  * @param {string} sku - Product SKU
- * @param {string} market - Market code (e.g., 'DE', 'HK', 'TW')
+ * @param {string} market - Market code (e.g., 'HK', 'TW')
  * @returns {number|string} Beta coefficient or 'not significant'
  */
-function getBetaCoefficient(sku, market = 'DE') {
-  if (market === 'DE') {
-    return DE_PILLOW_BETA_COEFFICIENTS[sku] || null;
-  }
-  // For other markets, use default elasticity
-  return -1.2;
+function getBetaCoefficient(sku, market = 'HK') {
+  return PILLOW_BETA_COEFFICIENTS[sku] || null;
 }
 
 /**
@@ -365,5 +360,5 @@ module.exports = {
   isCoefficientSignificant,
   calculateCrossElasticity,
   calculatePromotionalBreakeven,
-  DE_PILLOW_BETA_COEFFICIENTS
+  PILLOW_BETA_COEFFICIENTS
 };

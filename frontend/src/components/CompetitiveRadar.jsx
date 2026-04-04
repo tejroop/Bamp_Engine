@@ -14,8 +14,8 @@ import InsightCard from './InsightCard';
  * Key Ch.6 finding (Omitted Variable Bias):
  *   Adding competitor pricing FLIPS the own-price coefficient sign.
  *   Gap coefficients:
- *     HK β(gap) = -1.83: 1% price gap → 1.83% demand shift
- *     TW β(gap) = -2.32: 1% price gap → 2.32% demand shift
+ *     HK β(gap) = -1.8251: 1% price gap → 1.83% demand shift
+ *     TW β(gap) = -2.3232: 1% price gap → 2.32% demand shift
  *   TW is MORE sensitive to competitive pricing than HK.
  *
  * Uses simulated Granger-causality-inspired response coefficients:
@@ -96,9 +96,9 @@ export default function CompetitiveRadar({ market = 'HK' }) {
   const cascade = useMemo(() => simulateCascade(priceChange, market), [priceChange, market]);
 
   // Compute demand impact with and without competitive response
-  // Uses Ch.6 gap coefficients: HK β(gap)=-1.83, TW β(gap)=-2.32
+  // Uses Ch.6 gap coefficients: HK β(gap)=-1.8251, TW β(gap)=-2.3232
   const demandImpact = useMemo(() => {
-    const gapBeta = market === 'HK' ? -1.83 : -2.32; // From notebook Ch.6 OVB correction
+    const gapBeta = market === 'HK' ? -1.8251 : -2.3232; // From notebook Cell 90 OVB correction
     const naiveDemandChange = gapBeta * priceChange; // Without competitive response (full gap)
 
     // With response: competitors follow, eroding Emma's advantage
