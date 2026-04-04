@@ -3,112 +3,194 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine
 } from 'recharts';
+import InsightCard from './InsightCard';
 
 /**
- * PriceSimulator Component
+ * PriceSimulator — Aligned with Notebook Ch.4-5
  *
- * Interactive price simulation tool implementing the Market Response Model.
- * Users adjust sliders for mattress price, marketing spend, and competitor gap
- * to observe the cascading "ripple effect" on:
- *   Mattress Price → Attachment Rate → Accessory Demand → Total Revenue
+ * Traffic-Adjusted Revenue Optima (Ch.5):
+ *   HK:          €524
+ *   TW Entry:    €365
+ *   TW Mid:      €511
+ *   TW Premium:  €763
  *
- * The attachment rate follows a bell-curve shape with an interior optimum
- * at ~€400, as discovered in the thesis analysis combining order data with
- * website traffic/conversion rate data.
+ * Key insight from notebook: Without traffic adjustment (Ch.4), the revenue-
+ * maximizing price is at the UPPER boundary (no interior optimum). Only when
+ * incorporating conversion rate × traffic data does the interior optimum appear.
  *
- * Mathematical basis:
- *   AttachmentRate(P) = A_max × exp(-λ × (P - P_opt)²)
- *   where P_opt = €400, A_max = 32%, λ calibrated from empirical data
- *   Adjusted for marketing: +0.05% per €1000 additional spend
- *   Adjusted for competitor gap: +0.15% per 1% price advantage
+ * Model: Revenue(P) = Traffic(P) × ConversionRate(P) × P × (1 + AttachmentRate(P) × AccPrice/P)
+ *
+ * Attachment rates use the logistic model from Ch.3:
+ *   HK: β = +0.50 (positive)
+ *   TW: segment-specific negative betas
  */
 
 const formatCurrency = (val) => `€${val.toLocaleString()}`;
 const formatPercent = (val) => `${val.toFixed(1)}%`;
 
-export default function PriceSimulator({ market = 'DE' }) {
-  const [mattressPrice, setMattressPrice] = useState(400);
+// Market configurations aligned with notebook
+const MARKET_CONFIG = {
+  HK: {
+    optimalPrice: 524,
+    baseDemand: 700,          // monthly mattress units at optimal
+    baseAttachRate: 41,       // % at median price
+    attachBeta: 0.50,         // positive slope
+    priceElasticity: -0.95,   // from notebook
+    medianPrice: 500,
+    attachIntercept: -0.36,
+    avgAccessoryPrice: 52,
+    label: 'Hong Kong',
+    segment: null,
+  },
+  TW_Entry: {
+    optimalPrice: 365,
+    baseDemand: 2200,
+    baseAttachRate: 65,
+    attachBeta: -1.37,
+    priceElasticity: -1.08,
+    medianPrice: 225,
+    attachIntercept: 0.80,
+    avgAccessoryPrice: 35,
+    label: 'Taiwan — Entry',
+    segment: 'Entry',
+  },
+  TW_Mid: {
+    optimalPrice: 511,
+    baseDemand: 1500,
+    baseAttachRate: 58,
+    attachBeta: -2.86,        // steepest
+    priceElasticity: -1.08,
+    medianPrice: 425,
+    attachIntercept: 1.20,
+    avgAccessoryPrice: 45,
+    label: 'Taiwan — Mid',
+    segment: 'Mid',
+  },
+  TW_Premium: {
+    optimalPrice: 763,
+    baseDemand: 600,
+    baseAttachRate: 52,
+    attachBeta: -0.98,
+    priceElasticity: -1.08,
+    medianPrice: 675,
+    attachIntercept: 0.50,
+    avgAccessoryPrice: 60,
+    label: 'Taiwan — Premium',
+    segment: 'Premium',
+  },
+};
+
+export default function PriceSimulator({ market = 'HK' }) {
+  const [selectedConfig, setSelectedConfig] = useState(market === 'HK' ? 'HK' : 'TW_Mid');
+  const cfg = MARKET_CONFIG[selectedConfig];
+
+  const [mattressPrice, setMattressPrice] = useState(cfg.optimalPrice);
   const [marketingSpend, setMarketingSpend] = useState(50000);
   const [competitorGap, setCompetitorGap] = useState(0);
 
+  // Reset price when config changes
+  const handleConfigChange = (key) => {
+    setSelectedConfig(key);
+    setMattressPrice(MARKET_CONFIG[key].optimalPrice);
+  };
+
   const simulation = useMemo(() => {
-    // Core attachment rate model: bell curve peaking at optimal price
-    const optimalPrice = 400;
-    const maxRate = 32;
-    const lambda = 0.000025;
-    const baseRate = maxRate * Math.exp(-lambda * Math.pow(mattressPrice - optimalPrice, 2));
+    // Logistic attachment rate from Ch.3
+    const z = cfg.attachIntercept + cfg.attachBeta * Math.log(mattressPrice / cfg.medianPrice);
+    const logisticRate = 100 / (1 + Math.exp(-z));
 
     // Marketing spend adjustment (+0.05% per €1000 above baseline €50K)
     const marketingDelta = (marketingSpend - 50000) / 1000 * 0.05;
-
-    // Competitor gap adjustment (+0.15% per 1% we are cheaper)
+    // Competitor gap adjustment
     const competitorDelta = -competitorGap * 0.15;
 
-    const attachmentRate = Math.max(0, Math.min(50, baseRate + marketingDelta + competitorDelta));
+    const attachmentRate = Math.max(0, Math.min(90, logisticRate + marketingDelta + competitorDelta));
 
-    // Demand estimation
-    const baseDemand = 1500; // monthly mattress units
-    const priceElasticity = -1.24;
-    const demandMultiplier = Math.exp(priceElasticity * Math.log(mattressPrice / 400));
-    const predictedDemand = Math.round(baseDemand * demandMultiplier);
+    // Demand estimation using log-log elasticity
+    const demandMultiplier = Math.exp(cfg.priceElasticity * Math.log(mattressPrice / cfg.optimalPrice));
+    const predictedDemand = Math.round(cfg.baseDemand * demandMultiplier);
 
-    // Accessory calculations
-    const avgAccessoryPrice = 52; // avg pillow price in DE
-    const accessoryUnits = Math.round(predictedDemand * (attachmentRate / 100));
-    const accessoryRevenue = accessoryUnits * avgAccessoryPrice;
+    // Traffic-adjusted conversion factor (Ch.5 insight)
+    // Conversion drops at extreme prices — models the "no interior optimum without traffic" finding
+    const conversionPenalty = 1 - 0.3 * Math.pow((mattressPrice - cfg.optimalPrice) / cfg.optimalPrice, 2);
+    const adjustedDemand = Math.round(predictedDemand * Math.max(0.3, conversionPenalty));
 
-    // Total revenue
-    const mattressRevenue = predictedDemand * mattressPrice;
+    const accessoryUnits = Math.round(adjustedDemand * (attachmentRate / 100));
+    const accessoryRevenue = accessoryUnits * cfg.avgAccessoryPrice;
+    const mattressRevenue = adjustedDemand * mattressPrice;
     const totalRevenue = mattressRevenue + accessoryRevenue;
 
-    // Baseline comparison (at optimum)
-    const baselineMattressRev = 1500 * 400;
-    const baselineAccessoryRev = Math.round(1500 * 0.32) * 52;
-    const baselineTotal = baselineMattressRev + baselineAccessoryRev;
+    // Baseline at optimal
+    const baselineAccZ = cfg.attachIntercept + cfg.attachBeta * Math.log(cfg.optimalPrice / cfg.medianPrice);
+    const baselineAccRate = 100 / (1 + Math.exp(-baselineAccZ));
+    const baselineAccUnits = Math.round(cfg.baseDemand * (baselineAccRate / 100));
+    const baselineTotal = cfg.baseDemand * cfg.optimalPrice + baselineAccUnits * cfg.avgAccessoryPrice;
     const revenueChange = totalRevenue - baselineTotal;
-    const revenueChangePct = ((revenueChange / baselineTotal) * 100);
-
-    // Revenue per visitor (using estimated traffic)
-    const monthlyVisitors = 250000;
-    const revenuePerVisitor = totalRevenue / monthlyVisitors;
+    const revenueChangePct = (revenueChange / baselineTotal) * 100;
 
     return {
       attachmentRate,
-      predictedDemand,
+      predictedDemand: adjustedDemand,
       accessoryUnits,
       accessoryRevenue,
       mattressRevenue,
       totalRevenue,
       revenueChange,
       revenueChangePct,
-      revenuePerVisitor,
-      avgAccessoryPrice,
+      avgAccessoryPrice: cfg.avgAccessoryPrice,
     };
-  }, [mattressPrice, marketingSpend, competitorGap]);
+  }, [mattressPrice, marketingSpend, competitorGap, cfg]);
 
   // Generate curve data for the mini chart
   const curveData = useMemo(() => {
     const points = [];
     for (let p = 150; p <= 900; p += 25) {
-      const rate = 32 * Math.exp(-0.000025 * Math.pow(p - 400, 2));
+      const z = cfg.attachIntercept + cfg.attachBeta * Math.log(p / cfg.medianPrice);
+      const rate = 100 / (1 + Math.exp(-z));
       const mktAdj = (marketingSpend - 50000) / 1000 * 0.05;
       const compAdj = -competitorGap * 0.15;
       points.push({
         price: p,
-        rate: Math.max(0, Math.min(50, rate + mktAdj + compAdj)),
+        rate: +Math.max(0, Math.min(90, rate + mktAdj + compAdj)).toFixed(1),
       });
     }
     return points;
-  }, [marketingSpend, competitorGap]);
+  }, [marketingSpend, competitorGap, cfg]);
+
+  const configKeys = market === 'HK' ? ['HK'] : ['TW_Entry', 'TW_Mid', 'TW_Premium'];
 
   return (
     <div>
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-800">Price Simulation Engine</h2>
         <p className="text-sm text-gray-500">
-          Adjust mattress pricing to observe the accessory attachment ripple effect
+          Traffic-adjusted revenue model (Ch.5) — {cfg.label}
+          {cfg.attachBeta > 0 ? ' | Positive attachment slope' : ` | β=${cfg.attachBeta}`}
         </p>
       </div>
+
+      {/* Segment selector for TW */}
+      {market === 'TW' && (
+        <div className="flex gap-3 mb-6">
+          {configKeys.map(key => {
+            const c = MARKET_CONFIG[key];
+            return (
+              <button
+                key={key}
+                onClick={() => handleConfigChange(key)}
+                className={`px-4 py-3 rounded-xl border-2 transition-all text-left flex-1 ${
+                  selectedConfig === key
+                    ? 'border-orange-500 bg-orange-50 shadow-md'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <p className="text-sm font-semibold text-gray-800">{c.segment} Segment</p>
+                <p className="text-xs text-gray-500">β={c.attachBeta} | Optimum: €{c.optimalPrice}</p>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Controls */}
@@ -128,7 +210,7 @@ export default function PriceSimulator({ market = 'DE' }) {
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>€200</span>
-              <span className="text-orange-500 font-medium">Optimum: €400</span>
+              <span className="text-orange-500 font-medium">Optimum: €{cfg.optimalPrice}</span>
               <span>€900</span>
             </div>
           </div>
@@ -175,17 +257,24 @@ export default function PriceSimulator({ market = 'DE' }) {
 
           {/* Mini attachment rate chart */}
           <div className="bg-white rounded-xl shadow-md p-5 border border-gray-100">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Attachment Rate Curve (Live)</p>
+            <p className="text-sm font-semibold text-gray-700 mb-1">
+              Attachment Rate Curve — {cfg.label}
+            </p>
+            <p className="text-xs text-gray-400 mb-3">
+              {cfg.attachBeta > 0 ? 'Positive slope: higher price → more attachment' : `Negative slope (β=${cfg.attachBeta}): higher price → less attachment`}
+            </p>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={curveData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="price" tick={{ fontSize: 10 }} tickFormatter={(v) => `€${v}`} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}%`} domain={[0, 'auto']} />
                 <Tooltip
-                  formatter={(v) => [`${v.toFixed(1)}%`, 'Attachment Rate']}
+                  formatter={(v) => [`${v}%`, 'Attachment Rate']}
                   labelFormatter={(v) => `€${v}`}
                 />
                 <ReferenceLine x={mattressPrice} stroke="#FF6B00" strokeWidth={2} strokeDasharray="4 4" />
+                <ReferenceLine x={cfg.optimalPrice} stroke="#16a34a" strokeDasharray="3 3"
+                  label={{ value: `Opt: €${cfg.optimalPrice}`, position: 'top', fill: '#16a34a', fontSize: 10 }} />
                 <Area
                   type="monotone"
                   dataKey="rate"
@@ -217,10 +306,13 @@ export default function PriceSimulator({ market = 'DE' }) {
                 { label: 'Total Revenue', value: formatCurrency(simulation.totalRevenue), color: 'purple' },
               ].map((item, i) => (
                 <React.Fragment key={i}>
-                  <div className={`text-center p-3 bg-${item.color}-50 rounded-lg border border-${item.color}-200 flex-1`}
-                       style={{ backgroundColor: `var(--tw-${item.color}-50, #fff7ed)` }}>
+                  <div className={`text-center p-3 rounded-lg border flex-1`}
+                       style={{
+                         backgroundColor: item.color === 'orange' ? '#fff7ed' : item.color === 'blue' ? '#eff6ff' : item.color === 'green' ? '#f0fdf4' : '#faf5ff',
+                         borderColor: item.color === 'orange' ? '#fed7aa' : item.color === 'blue' ? '#bfdbfe' : item.color === 'green' ? '#bbf7d0' : '#e9d5ff'
+                       }}>
                     <p className="text-xs text-gray-500">{item.label}</p>
-                    <p className={`text-lg font-bold`} style={{ color: item.color === 'orange' ? '#ea580c' : item.color === 'blue' ? '#2563eb' : item.color === 'green' ? '#16a34a' : '#9333ea' }}>
+                    <p className="text-lg font-bold" style={{ color: item.color === 'orange' ? '#ea580c' : item.color === 'blue' ? '#2563eb' : item.color === 'green' ? '#16a34a' : '#9333ea' }}>
                       {item.value}
                     </p>
                   </div>
@@ -235,14 +327,12 @@ export default function PriceSimulator({ market = 'DE' }) {
             <div className="bg-white rounded-xl shadow-md p-5 border border-gray-100">
               <p className="text-xs text-gray-500 uppercase tracking-wider">Predicted Attachment Rate</p>
               <p className="text-3xl font-bold text-orange-600 mt-1">{formatPercent(simulation.attachmentRate)}</p>
-              <p className="text-xs text-gray-400 mt-2">
-                {simulation.attachmentRate >= 30 ? '✓ Near optimal' : simulation.attachmentRate >= 20 ? '↗ Room to improve' : '⚠ Below target'}
-              </p>
+              <p className="text-xs text-gray-400 mt-2">β = {cfg.attachBeta > 0 ? '+' : ''}{cfg.attachBeta}</p>
             </div>
             <div className="bg-white rounded-xl shadow-md p-5 border border-gray-100">
               <p className="text-xs text-gray-500 uppercase tracking-wider">Mattress Demand</p>
               <p className="text-3xl font-bold text-blue-600 mt-1">{simulation.predictedDemand.toLocaleString()}</p>
-              <p className="text-xs text-gray-400 mt-2">Monthly units (ε = -1.24)</p>
+              <p className="text-xs text-gray-400 mt-2">Monthly units (ε = {cfg.priceElasticity})</p>
             </div>
             <div className="bg-white rounded-xl shadow-md p-5 border border-gray-100">
               <p className="text-xs text-gray-500 uppercase tracking-wider">Accessory Revenue</p>
@@ -255,7 +345,7 @@ export default function PriceSimulator({ market = 'DE' }) {
                 {simulation.revenueChange >= 0 ? '+' : ''}{formatCurrency(simulation.revenueChange)}
               </p>
               <p className="text-xs text-gray-400 mt-2">
-                {simulation.revenueChangePct >= 0 ? '+' : ''}{simulation.revenueChangePct.toFixed(1)}% vs. optimum baseline
+                {simulation.revenueChangePct >= 0 ? '+' : ''}{simulation.revenueChangePct.toFixed(1)}% vs. optimum
               </p>
             </div>
           </div>
@@ -295,17 +385,26 @@ export default function PriceSimulator({ market = 'DE' }) {
             </div>
           </div>
 
-          {/* Insight */}
-          <div className={`p-4 rounded-lg border ${simulation.revenueChange >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-            <p className={`text-sm ${simulation.revenueChange >= 0 ? 'text-green-800' : 'text-red-800'}`}>
-              <span className="font-bold">Simulation Insight: </span>
-              At €{mattressPrice} with €{(marketingSpend/1000).toFixed(0)}K marketing spend
-              {competitorGap !== 0 && ` and ${competitorGap > 0 ? '+' : ''}${competitorGap}% competitor gap`},
-              the model predicts a {formatPercent(simulation.attachmentRate)} attachment rate
-              yielding {formatCurrency(simulation.totalRevenue)} total monthly revenue
-              ({simulation.revenueChange >= 0 ? '+' : ''}{formatCurrency(simulation.revenueChange)} vs baseline).
-            </p>
-          </div>
+          {/* AI Insight Narrator */}
+          <InsightCard
+            headline={
+              simulation.revenueChange >= 0
+                ? `+${formatCurrency(simulation.revenueChange)} vs optimum (+${simulation.revenueChangePct.toFixed(1)}%) — ${cfg.label}`
+                : `Warning: −${formatCurrency(Math.abs(simulation.revenueChange))} vs optimum (${simulation.revenueChangePct.toFixed(1)}%) — ${cfg.label}`
+            }
+            body={
+              `At €${mattressPrice}, the ${cfg.label} model predicts ${simulation.attachmentRate.toFixed(1)}% attachment (β=${cfg.attachBeta > 0 ? '+' : ''}${cfg.attachBeta}) and ${simulation.predictedDemand.toLocaleString()} monthly units (ε=${cfg.priceElasticity}). ` +
+              (cfg.attachBeta > 0
+                ? `HK's positive attachment slope means raising prices toward €${cfg.optimalPrice} simultaneously increases per-unit revenue AND attachment probability — a rare double benefit. The traffic-adjusted optimum (Ch.5) accounts for declining conversion at extreme prices.`
+                : `TW ${cfg.segment}'s negative slope means price increases above €${cfg.optimalPrice} will erode both volume AND cross-sell. The ${Math.abs(cfg.attachBeta).toFixed(2)} sensitivity coefficient makes this segment ${Math.abs(cfg.attachBeta) > 2 ? 'highly price-sensitive' : 'moderately sensitive'} to pricing changes.`)
+            }
+            recommendation={
+              Math.abs(mattressPrice - cfg.optimalPrice) < 30
+                ? `Current price is near the €${cfg.optimalPrice} traffic-adjusted optimum. Fine-tune marketing spend for marginal gains.`
+                : `Move price toward €${cfg.optimalPrice} to capture the traffic-adjusted revenue maximum from Ch.5.`
+            }
+            sentiment={simulation.revenueChange >= 0 ? 'positive' : 'negative'}
+          />
         </div>
       </div>
     </div>

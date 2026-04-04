@@ -6,6 +6,12 @@ import ElasticityChart from './components/ElasticityChart'
 import PriceSimulator from './components/PriceSimulator'
 import MethodologyPanel from './components/MethodologyPanel'
 import MarketSelector from './components/MarketSelector'
+import AnomalyDetector from './components/AnomalyDetector'
+import ChatBot from './components/ChatBot'
+import ScenarioLab from './components/ScenarioLab'
+import CompetitiveRadar from './components/CompetitiveRadar'
+import DiscountOptimizer from './components/DiscountOptimizer'
+import BundleRecommender from './components/BundleRecommender'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -17,6 +23,10 @@ function App() {
     { id: 'incrementality', label: 'Incrementality' },
     { id: 'elasticity', label: 'Elasticity' },
     { id: 'simulator', label: 'Price Simulator' },
+    { id: 'scenario', label: 'Scenario Lab' },
+    { id: 'competitive', label: 'Competitive Intel' },
+    { id: 'discount', label: 'Discount Lab' },
+    { id: 'bundles', label: 'Bundle Lab' },
     { id: 'methodology', label: 'Methodology' },
   ]
 
@@ -32,6 +42,14 @@ function App() {
         return <ElasticityChart market={selectedMarket} />
       case 'simulator':
         return <PriceSimulator market={selectedMarket} />
+      case 'scenario':
+        return <ScenarioLab market={selectedMarket} />
+      case 'competitive':
+        return <CompetitiveRadar market={selectedMarket} />
+      case 'discount':
+        return <DiscountOptimizer market={selectedMarket} />
+      case 'bundles':
+        return <BundleRecommender market={selectedMarket} />
       case 'methodology':
         return <MethodologyPanel />
       default:
@@ -49,8 +67,11 @@ function App() {
               <h1 className="text-4xl font-bold mb-2">BAMP Market Response Engine</h1>
               <p className="text-orange-300">Emma Sleep - Strategic Pricing & Market Analysis</p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-300">Market Intelligence Platform</p>
+            <div className="flex items-center gap-4">
+              <AnomalyDetector market={selectedMarket} />
+              <div className="text-right">
+                <p className="text-sm text-gray-300">Market Intelligence Platform</p>
+              </div>
             </div>
           </div>
           
@@ -93,6 +114,9 @@ function App() {
           <p>BAMP Market Response Engine | Emma Sleep © 2024 | Powered by Advanced Analytics</p>
         </div>
       </footer>
+
+      {/* Conversational Analytics Chatbot (F3) */}
+      <ChatBot market={selectedMarket} />
     </div>
   )
 }

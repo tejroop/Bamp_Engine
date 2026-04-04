@@ -1,38 +1,43 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine, ReferenceArea
 } from 'recharts';
+import InsightCard from './InsightCard';
 
 /**
- * ElasticityChart Component
+ * ElasticityChart Component — Aligned with Notebook Ch.4-5
  *
  * Visualizes price elasticity of demand across markets over time.
  *
- * Elasticity = k * (P_mean / Q_mean)
- * where k = regression coefficient for price from Prophet.
+ * From the notebook:
+ *   HK avg ε ≈ -0.95 (inelastic — premium positioning viable)
+ *   TW avg ε ≈ -1.08 (mildly elastic — competitive pricing needed)
+ *
+ * Key Ch.6 insight: Adding competitor pricing via OVB correction
+ * flips the own-price coefficient sign. The gap coefficients
+ * (β_gap HK=-1.83, TW=-2.32) show the RELATIVE price matters
+ * more than absolute price.
  *
  * Interpretation:
  *   |ε| = 1  → Unit elastic (proportional response)
  *   |ε| < 1  → Inelastic (demand relatively unresponsive to price)
  *   |ε| > 1  → Elastic (demand highly responsive to price)
- *
- * Negative sign indicates inverse price-demand relationship (as expected).
  */
 
 const ELASTICITY_DATA = [
-  { month: 'Jan', DE: -1.18, HK: -0.88, TW: -1.05 },
-  { month: 'Feb', DE: -1.22, HK: -0.92, TW: -1.08 },
-  { month: 'Mar', DE: -1.15, HK: -0.85, TW: -1.02 },
-  { month: 'Apr', DE: -1.28, HK: -0.95, TW: -1.12 },
-  { month: 'May', DE: -1.35, HK: -0.98, TW: -1.18 },
-  { month: 'Jun', DE: -1.30, HK: -0.93, TW: -1.15 },
-  { month: 'Jul', DE: -1.20, HK: -0.87, TW: -1.06 },
-  { month: 'Aug', DE: -1.24, HK: -0.91, TW: -1.10 },
-  { month: 'Sep', DE: -1.32, HK: -0.96, TW: -1.14 },
-  { month: 'Oct', DE: -1.26, HK: -0.94, TW: -1.11 },
-  { month: 'Nov', DE: -1.38, HK: -1.02, TW: -1.20 },
-  { month: 'Dec', DE: -1.42, HK: -1.05, TW: -1.25 },
+  { month: 'Jan', HK: -0.88, TW: -1.05 },
+  { month: 'Feb', HK: -0.92, TW: -1.08 },
+  { month: 'Mar', HK: -0.85, TW: -1.02 },
+  { month: 'Apr', HK: -0.95, TW: -1.12 },
+  { month: 'May', HK: -0.98, TW: -1.18 },
+  { month: 'Jun', HK: -0.93, TW: -1.15 },
+  { month: 'Jul', HK: -0.87, TW: -1.06 },
+  { month: 'Aug', HK: -0.91, TW: -1.10 },
+  { month: 'Sep', HK: -0.96, TW: -1.14 },
+  { month: 'Oct', HK: -0.94, TW: -1.11 },
+  { month: 'Nov', HK: -1.02, TW: -1.20 },
+  { month: 'Dec', HK: -1.05, TW: -1.25 },
 ];
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -53,10 +58,36 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-export default function ElasticityChart({ market = 'DE' }) {
-  const avgDE = (ELASTICITY_DATA.reduce((s, d) => s + d.DE, 0) / 12).toFixed(2);
+export default function ElasticityChart({ market = 'HK' }) {
   const avgHK = (ELASTICITY_DATA.reduce((s, d) => s + d.HK, 0) / 12).toFixed(2);
   const avgTW = (ELASTICITY_DATA.reduce((s, d) => s + d.TW, 0) / 12).toFixed(2);
+
+  // AI Insight Narrator — dynamic insights computed from actual data
+  const insight = useMemo(() => {
+    const hk = parseFloat(avgHK);
+    const tw = parseFloat(avgTW);
+    const hkAbs = Math.abs(hk);
+    const twAbs = Math.abs(tw);
+    const hkClass = hkAbs > 1 ? 'elastic' : 'inelastic';
+    const twClass = twAbs > 1 ? 'elastic' : 'inelastic';
+    const q4HK = Math.abs((ELASTICITY_DATA[10].HK + ELASTICITY_DATA[11].HK) / 2);
+    const q2HK = Math.abs((ELASTICITY_DATA[3].HK + ELASTICITY_DATA[4].HK) / 2);
+    const seasonalShift = ((q4HK - q2HK) / q2HK * 100).toFixed(0);
+
+    return {
+      headline: market === 'HK'
+        ? `Hong Kong demand is ${hkClass} (avg ${avgHK}) — a 10% price increase would reduce volume by only ${(hkAbs * 10).toFixed(1)}%`
+        : `Taiwan demand is ${twClass} (avg ${avgTW}) — a 10% price increase would reduce volume by ${(twAbs * 10).toFixed(1)}%`,
+      body: market === 'HK'
+        ? `With an average elasticity of ${avgHK}, HK consumers show relatively low price sensitivity. This means Emma Sleep has pricing power in this market — modest price increases will not significantly erode demand. However, elasticity rises ${seasonalShift}% during Q4 (Nov-Dec), when competitive holiday discounting makes consumers temporarily more price-aware.`
+        : `With an average elasticity of ${avgTW}, TW consumers respond strongly to price changes. Every 1% price increase leads to approximately ${twAbs.toFixed(2)}% demand reduction. This elastic demand profile means competitive pricing is critical in Taiwan, particularly during promotional seasons when consumers actively comparison-shop.`,
+      recommendation: market === 'HK'
+        ? `Pursue premium pricing in HK. The inelastic demand supports a 5-8% price uplift with minimal volume loss, yielding an estimated net revenue gain of ${(hkAbs < 1 ? (5 * (1 - hkAbs) * 100).toFixed(0) : '2-3')}% on mattress sales.`
+        : `Hold or reduce prices in TW. Elastic demand means discounts drive disproportionate volume gains. A targeted 10% promotional discount could increase unit sales by ~${(twAbs * 10).toFixed(0)}%, potentially offsetting the margin compression through volume.`,
+      comparison: `HK (${avgHK}) vs TW (${avgTW}): Hong Kong is ${(twAbs - hkAbs).toFixed(2)} points less elastic than Taiwan. This divergence suggests fundamentally different consumer segments — HK buyers prioritize brand/quality, while TW buyers are more price-driven. Consider differentiated pricing strategies across markets.`,
+      sentiment: market === 'HK' ? 'positive' : 'negative',
+    };
+  }, [market, avgHK, avgTW]);
 
   return (
     <div>
@@ -101,15 +132,6 @@ export default function ElasticityChart({ market = 'DE' }) {
 
           <Line
             type="monotone"
-            dataKey="DE"
-            name="Germany (DE)"
-            stroke="#ef4444"
-            strokeWidth={2.5}
-            dot={{ r: 4, fill: '#ef4444' }}
-            activeDot={{ r: 6 }}
-          />
-          <Line
-            type="monotone"
             dataKey="HK"
             name="Hong Kong (HK)"
             stroke="#3b82f6"
@@ -130,19 +152,7 @@ export default function ElasticityChart({ market = 'DE' }) {
       </ResponsiveContainer>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4 mt-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-red-600 font-medium">Germany (DE)</p>
-              <p className="text-2xl font-bold text-red-700">{avgDE}</p>
-            </div>
-            <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded font-medium">Elastic</span>
-          </div>
-          <p className="text-xs text-red-500 mt-2">
-            Most price-sensitive market. 1% price increase → ~{Math.abs(avgDE)}% demand decrease.
-          </p>
-        </div>
+      <div className="grid grid-cols-2 gap-4 mt-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -169,14 +179,14 @@ export default function ElasticityChart({ market = 'DE' }) {
         </div>
       </div>
 
-      <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-sm text-amber-800">
-          <span className="font-bold">Key Insight:</span> DE and TW show consistently elastic demand (|ε| &gt; 1),
-          meaning price changes significantly impact quantity sold. HK is generally inelastic, suggesting room for
-          premium pricing strategies. Note that elasticity increases during Q4 (Nov-Dec) across all markets due to
-          competitive holiday discounting.
-        </p>
-      </div>
+      {/* AI Insight Narrator */}
+      <InsightCard
+        headline={insight.headline}
+        body={insight.body}
+        recommendation={insight.recommendation}
+        comparison={insight.comparison}
+        sentiment={insight.sentiment}
+      />
     </div>
   );
 }
