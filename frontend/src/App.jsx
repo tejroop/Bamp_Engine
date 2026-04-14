@@ -119,7 +119,7 @@ function MoreMenu({ items, activeTab, onSelect, onOpenCustomize }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-0 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2">
+        <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-[60] py-2">
           {Object.entries(grouped).map(([group, groupItems]) => (
             <div key={group} className="py-1">
               <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
@@ -416,7 +416,17 @@ function App() {
               {['executive','analyst'].map(m => (
                 <button
                   key={m}
-                  onClick={() => setPrefs(p => ({ ...p, mode: m, customized: true, preset: null }))}
+                  onClick={() => {
+                    // Switching header mode applies that role's default pins
+                    // so Executive vs Analyst look visibly different.
+                    const preset = ROLE_PRESETS[m]
+                    setPrefs({
+                      mode: preset.mode,
+                      pinned: [...preset.pinned],
+                      preset: m,
+                      customized: false,
+                    })
+                  }}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize transition ${
                     prefs.mode === m ? 'bg-white text-gray-800 shadow' : 'text-white/80 hover:text-white'
                   }`}
@@ -436,7 +446,7 @@ function App() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between">
-            <div className="flex space-x-1 overflow-x-auto">
+            <div className="flex space-x-1 flex-wrap">
               {primaryTabs.map(tab => (
                 <button
                   key={tab.id}
