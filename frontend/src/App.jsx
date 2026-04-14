@@ -12,6 +12,8 @@ import ScenarioLab from './components/ScenarioLab'
 import CompetitiveRadar from './components/CompetitiveRadar'
 import DiscountOptimizer from './components/DiscountOptimizer'
 import BundleRecommender from './components/BundleRecommender'
+import MacroValidation from './components/MacroValidation'
+import SentimentAnalysis from './components/SentimentAnalysis'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -27,6 +29,8 @@ function App() {
     { id: 'competitive', label: 'Competitive Intel' },
     { id: 'discount', label: 'Discount Lab' },
     { id: 'bundles', label: 'Bundle Lab' },
+    { id: 'macro', label: 'Macro Validation' },
+    { id: 'sentiment', label: 'Sentiment' },
     { id: 'methodology', label: 'Methodology' },
   ]
 
@@ -50,6 +54,10 @@ function App() {
         return <DiscountOptimizer market={selectedMarket} />
       case 'bundles':
         return <BundleRecommender market={selectedMarket} />
+      case 'macro':
+        return <MacroValidation market={selectedMarket} />
+      case 'sentiment':
+        return <SentimentAnalysis market={selectedMarket} />
       case 'methodology':
         return <MethodologyPanel />
       default:
