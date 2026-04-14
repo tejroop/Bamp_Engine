@@ -6,32 +6,33 @@ import {
 import InsightCard from './InsightCard'
 
 /**
- * Attachment Rate Chart — Aligned with Notebook Ch.3 Ridge Logistic Regression
+ * Attachment Rate Chart — Aligned with Notebook v02 Ch.3 Logistic Regression (MLE, no regularization)
  *
- * Key findings from the notebook:
- *   HK: Market-level β = +0.4998 (POSITIVE slope — Simpson's paradox)
+ * Key findings from v02 notebook:
+ *   HK: Market-level β = +0.6316 (was +0.4998, POSITIVE slope — Simpson's paradox)
+ *        const = -4.4104 (was -3.5607)
  *        Within-segment betas are negative, but composition effects flip the sign.
  *        Higher-priced SKUs sell more accessories at market level.
  *
- *   TW: Per-segment negative slopes (Ridge logistic, α=1e-6):
- *        Entry (P < €300):   β = -1.37
- *        Mid   (€300-€550):  β = -2.86 (steepest — most sensitive)
- *        Premium (P > €550): β = -0.98
+ *   TW: Per-segment negative slopes (MLE logistic):
+ *        Entry (P < €300):   β = -1.3703 (was -1.3715), const = 8.2849 (was 8.3715)
+ *        Mid   (€300-€550):  β = -2.8556 (unchanged), const = 18.5434 (was 18.5593)
+ *        Premium (P > €550): β = -0.9580 (was -0.9842), const = 7.0481 (was 7.3041)
  *
  *   The old Gaussian bell curve model was INCORRECT.
  *   There is NO single interior optimum for attachment rate.
  *   HK: attachment rises with price. TW: attachment falls (per segment).
  */
 
-// Generate logistic-transformed attachment curves from notebook betas
+// Generate logistic-transformed attachment curves from notebook v02 betas
 function generateHKCurve() {
   const points = [];
-  // HK: logistic model from notebook Cell 54
+  // HK: logistic model from notebook v02 Cell 54
   // P(acc|mattress) = logistic(const + β × log(mattress_price))
-  // const = -3.5607, β = +0.4998
-  // At median price (€566.83): z = -3.5607 + 0.4998*log(566.83) = -0.39 → P ≈ 40.3%
-  const beta = 0.4998;
-  const intercept = -3.5607;
+  // const = -4.4104 (v02, was -3.5607), β = +0.6316 (v02, was +0.4998)
+  // At median price (€567.49): z = -4.4104 + 0.6316*log(567.49) ≈ -0.18 → P ≈ 45.5%
+  const beta = 0.6316;
+  const intercept = -4.4104;
 
   for (let p = 200; p <= 1300; p += 25) {
     const z = intercept + beta * Math.log(p);
@@ -42,13 +43,12 @@ function generateHKCurve() {
 }
 
 function generateTWCurves() {
-  // TW: three segment-specific logistic models from notebook Cell 56
+  // TW: three segment-specific logistic models from notebook v02 Cell 56-57
   // z = const + beta * log(mattress_price)
-  // Intercepts back-calculated from segment attach rates and median prices
   const segments = {
-    Entry:   { beta: -1.3715, intercept: 8.3715, range: [190, 468], color: '#3b82f6' },
-    Mid:     { beta: -2.8556, intercept: 18.5593, range: [285, 645], color: '#f97316' },
-    Premium: { beta: -0.9842, intercept: 7.3041, range: [502, 918], color: '#8b5cf6' },
+    Entry:   { beta: -1.3703, intercept: 8.2849, range: [190, 468], color: '#3b82f6' },
+    Mid:     { beta: -2.8556, intercept: 18.5434, range: [285, 645], color: '#f97316' },
+    Premium: { beta: -0.9580, intercept: 7.0481, range: [502, 918], color: '#8b5cf6' },
   };
 
   const points = [];

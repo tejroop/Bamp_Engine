@@ -6,13 +6,13 @@ import {
 import InsightCard from './InsightCard';
 
 /**
- * PriceSimulator — Aligned with Notebook Ch.4-5
+ * PriceSimulator — Aligned with Notebook v02 Ch.4-5
  *
- * Traffic-Adjusted Revenue Optima (Ch.5):
- *   HK:          €524
- *   TW Entry:    €365
- *   TW Mid:      €364
- *   TW Premium:  €502 (lower_bound)
+ * Traffic-Adjusted Revenue Optima (Ch.5, v02):
+ *   HK:          €559 (was €524)
+ *   TW Entry:    €398 (was €365)
+ *   TW Mid:      €396 (was €364)
+ *   TW Premium:  €506 (was €502)
  *
  * Key insight from notebook: Without traffic adjustment (Ch.4), the revenue-
  * maximizing price is at the UPPER boundary (no interior optimum). Only when
@@ -20,61 +20,61 @@ import InsightCard from './InsightCard';
  *
  * Model: Revenue(P) = Traffic(P) × ConversionRate(P) × P × (1 + AttachmentRate(P) × AccPrice/P)
  *
- * Attachment rates use the logistic model from Ch.3:
- *   HK: β = +0.50 (positive)
- *   TW: segment-specific negative betas
+ * Attachment rates use the logistic model from Ch.3 (v02):
+ *   HK: β = +0.6316 (was +0.4998), const = -4.4104 (was -3.5607)
+ *   TW: segment-specific negative betas (unchanged)
  */
 
 const formatCurrency = (val) => `€${val.toLocaleString()}`;
 const formatPercent = (val) => `${val.toFixed(1)}%`;
 
-// Market configurations aligned with notebook
+// Market configurations aligned with notebook v02
 const MARKET_CONFIG = {
   HK: {
-    optimalPrice: 524,          // Ch.5 traffic-adjusted interior optimum
+    optimalPrice: 559,          // Ch.5 traffic-adjusted interior optimum (v02, was 524)
     baseDemand: 700,
     baseAttachRate: 41.3,       // P(acc|mattress) from Cell 49
-    attachBeta: 0.4998,         // Cell 54: log_mattress_price coefficient
+    attachBeta: 0.6316,         // Cell 54: log_mattress_price coefficient (v02, was 0.4998)
     priceElasticity: -0.95,
-    medianPrice: 566.83,        // Cell 50: modelling dataset median
-    attachIntercept: -3.5607,   // Cell 54: const
+    medianPrice: 567.49,        // Cell 50: modelling dataset median (v02, was 566.83)
+    attachIntercept: -4.4104,   // Cell 54: const (v02, was -3.5607)
     avgAccessoryPrice: 116.22,  // Cell 61: median accessory revenue per attached order
     label: 'Hong Kong',
     segment: null,
   },
   TW_Entry: {
-    optimalPrice: 365,          // Ch.5 interior optimum
+    optimalPrice: 398,          // Ch.5 interior optimum (v02, was 365)
     baseDemand: 2200,
     baseAttachRate: 60.4,       // Cell 56: segment attach rate
-    attachBeta: -1.3715,        // Cell 56
+    attachBeta: -1.3703,        // Cell 56 (v02, was -1.3715)
     priceElasticity: -1.08,
     medianPrice: 329,           // midpoint of simulation grid (190-468)
-    attachIntercept: 8.3715,    // back-calculated from attach rate & median
-    avgAccessoryPrice: 112.79,  // Cell 61: segment-level anchor
+    attachIntercept: 8.2849,    // back-calculated from attach rate & median (v02, was 8.3715)
+    avgAccessoryPrice: 112.82,  // Cell 61: segment-level anchor (v02, was 112.79)
     label: 'Taiwan — Entry',
     segment: 'Entry',
   },
   TW_Mid: {
-    optimalPrice: 364,          // Ch.5 interior optimum (was 511)
+    optimalPrice: 396,          // Ch.5 interior optimum (v02, was 364)
     baseDemand: 1500,
     baseAttachRate: 73.5,       // Cell 56: segment attach rate
-    attachBeta: -2.8556,        // Cell 56 — steepest
+    attachBeta: -2.8556,        // Cell 56 — steepest (unchanged)
     priceElasticity: -1.08,
     medianPrice: 465,           // midpoint of simulation grid (285-645)
-    attachIntercept: 18.5593,   // back-calculated
-    avgAccessoryPrice: 161.55,  // Cell 61: segment-level anchor
+    attachIntercept: 18.5434,   // back-calculated (v02, was 18.5593)
+    avgAccessoryPrice: 161.60,  // Cell 61: segment-level anchor (v02, was 161.55)
     label: 'Taiwan — Mid',
     segment: 'Mid',
   },
   TW_Premium: {
-    optimalPrice: 502,          // Ch.5 lower_bound (was 763)
+    optimalPrice: 506,          // Ch.5 lower_bound (v02, was 502)
     baseDemand: 600,
-    baseAttachRate: 69.9,       // Cell 56: segment attach rate
-    attachBeta: -0.9842,        // Cell 56
+    baseAttachRate: 69.8,       // Cell 56: segment attach rate (v02, was 69.9%)
+    attachBeta: -0.9580,        // Cell 56 (v02, was -0.9842)
     priceElasticity: -1.08,
     medianPrice: 710,           // midpoint of simulation grid (502-918)
-    attachIntercept: 7.3041,    // back-calculated
-    avgAccessoryPrice: 180.40,  // Cell 61: segment-level anchor
+    attachIntercept: 7.0481,    // back-calculated (v02, was 7.3041)
+    avgAccessoryPrice: 181.00,  // Cell 61: segment-level anchor (v02, was 180.40)
     label: 'Taiwan — Premium',
     segment: 'Premium',
   },

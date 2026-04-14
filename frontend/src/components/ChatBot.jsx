@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 
 /**
- * F3: Conversational Analytics Chatbot
+ * F3: Conversational Analytics Chatbot — Aligned with Notebook v02
  *
  * Natural-language query interface that routes user questions to the
  * existing BAMP econometric models and returns grounded, data-driven answers.
@@ -17,12 +17,12 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
  * and feels like AI but runs deterministically on the real econometric models.
  */
 
-// ── Real Market Data — aligned with notebook regression results ──────────────
+// ── Real Market Data — aligned with notebook v02 regression results ────────────
 const MARKET_DATA = {
   HK: {
     total_orders: 16622, total_revenue: 8840669, currency: 'HKD', symbol: 'HK$',
-    avg_attachment_rate: 41.3, attachment_beta: '+0.4998', elasticity: -0.95,
-    incrementality: 3.56, optimal_price: 524, gap_beta: -1.8251,
+    avg_attachment_rate: 41.3, attachment_beta: '+0.6316', elasticity: -0.95,
+    incrementality: 3.56, optimal_price: 559, gap_beta: -1.8251,
     top_product: 'EPWFP (Foam Pillow, 5,151 units)',
     top_mattress: 'EMAHE (941 units, avg HK$681)',
     competitors: ['Ecosa', 'Origin', 'Skyler', 'Hushhome'],
@@ -30,9 +30,9 @@ const MARKET_DATA = {
   },
   TW: {
     total_orders: 74139, total_revenue: 32862634, currency: 'TWD', symbol: 'NT$',
-    avg_attachment_rate: 48.6, attachment_beta: 'Entry -1.37, Mid -2.86, Premium -0.98',
+    avg_attachment_rate: 48.6, attachment_beta: 'Entry -1.3703, Mid -2.8556, Premium -0.9580',
     elasticity: -1.08, incrementality: 1.62,
-    optimal_price_entry: 365, optimal_price_mid: 364, optimal_price_premium: 502,
+    optimal_price_entry: 398, optimal_price_mid: 396, optimal_price_premium: 506,
     gap_beta: -2.3232,
     top_product: 'EPWTW (Travel Pillow, 57,221 units)',
     top_mattress: 'EMAHE (11,549 units, avg NT$410)',
@@ -51,12 +51,12 @@ const PILLOW_BETAS = {
   EPWAF: { name: 'Active Fiber', beta2: -1.23, significant: true },
 };
 
-// ── Price Simulation Engine — aligned with notebook Ch.3-5 logistic model ────
+// ── Price Simulation Engine — aligned with notebook v02 Ch.3-5 logistic model ──
 function simulatePrice(price, market = 'HK', marketing = 50000, gap = 0) {
-  // Market-specific parameters from notebook
+  // Market-specific parameters from notebook v02
   const configs = {
-    HK: { optimalPrice: 524, baseDemand: 700, beta: 0.4998, intercept: -3.5607, medianPrice: 566.83, elasticity: -0.95, accPrice: 116.22 },
-    TW: { optimalPrice: 364, baseDemand: 1500, beta: -2.8556, intercept: 18.5593, medianPrice: 465, elasticity: -1.08, accPrice: 161.55 },
+    HK: { optimalPrice: 559, baseDemand: 700, beta: 0.6316, intercept: -4.4104, medianPrice: 567.49, elasticity: -0.95, accPrice: 116.22 },
+    TW: { optimalPrice: 396, baseDemand: 1500, beta: -2.8556, intercept: 18.5434, medianPrice: 465, elasticity: -1.08, accPrice: 161.60 },
   };
   const cfg = configs[market] || configs.HK;
 
@@ -109,7 +109,7 @@ const INTENTS = [
           if (m) { price = parseInt(m[1]); break; }
         }
       }
-      if (!price || price < 50 || price > 2000) price = market === 'HK' ? 524 : 364;
+      if (!price || price < 50 || price > 2000) price = market === 'HK' ? 559 : 396;
       const sim = simulatePrice(price, market);
       const direction = sim.revenueChange >= 0 ? 'gain' : 'lose';
       const absChange = Math.abs(sim.revenueChange).toLocaleString();
@@ -122,9 +122,9 @@ const INTENTS = [
           `• **Total Revenue**: €${sim.totalRevenue.toLocaleString()}\n` +
           `• **Net Change**: You would ${direction} €${absChange}/month vs the €${sim.optimalPrice} optimum\n\n` +
           `${market === 'HK'
-            ? `HK has a positive attachment slope (β=+0.50) — Simpson's paradox means higher prices actually boost cross-sell at market level. The traffic-adjusted revenue optimum is €${d.optimal_price}.`
-            : `TW has negative per-segment slopes (${d.attachment_beta}). The Mid segment is most sensitive (β=-2.86). Revenue optima: Entry €${d.optimal_price_entry}, Mid €${d.optimal_price_mid}, Premium €${d.optimal_price_premium}.`}`,
-        source: 'Price Simulation (Ch.3 Logistic Model + Ch.5 Traffic-Adjusted Optima)',
+            ? `HK has a positive attachment slope (β=+0.6316) — Simpson's paradox means higher prices actually boost cross-sell at market level. The traffic-adjusted revenue optimum is €${d.optimal_price}.`
+            : `TW has negative per-segment slopes (${d.attachment_beta}). The Mid segment is most sensitive (β=-2.8556). Revenue optima: Entry €${d.optimal_price_entry}, Mid €${d.optimal_price_mid}, Premium €${d.optimal_price_premium}.`}`,
+        source: 'Price Simulation (v02 Ch.3 Logistic Model + Ch.5 Traffic-Adjusted Optima)',
       };
     },
   },
@@ -155,20 +155,20 @@ const INTENTS = [
       const other = market === 'HK' ? 'TW' : 'HK';
       const otherD = MARKET_DATA[other];
       return {
-        text: `The average attachment rate for **${market === 'HK' ? 'Hong Kong' : 'Taiwan'}** is **${d.avg_attachment_rate}%** (P(accessory|mattress) from Ch.3 logistic model).\n\n` +
+        text: `The average attachment rate for **${market === 'HK' ? 'Hong Kong' : 'Taiwan'}** is **${d.avg_attachment_rate}%** (P(accessory|mattress) from Ch.3 logistic model, MLE).\n\n` +
           (market === 'HK'
             ? `Key HK finding — **Simpson's Paradox**:\n` +
-              `• Market-level β = **+0.50** (positive slope — higher price → MORE attachment)\n` +
+              `• Market-level β = **+0.6316** (positive slope — higher price → MORE attachment)\n` +
               `• Within-segment betas are negative, but composition effects flip the sign\n` +
               `• Premium buyers are disproportionately heavy cross-sellers\n` +
               `• Revenue-maximizing price: **€${d.optimal_price}** (traffic-adjusted, Ch.5)\n`
-            : `Key TW finding — **Segment-Specific Slopes**:\n` +
-              `• Entry (P<€300): β = **-1.37**\n` +
-              `• Mid (€300-€550): β = **-2.86** (steepest — most price-sensitive)\n` +
-              `• Premium (P>€550): β = **-0.98**\n` +
+            : `Key TW finding — **Segment-Specific Slopes** (MLE logistic):\n` +
+              `• Entry (P<€300): β = **-1.3703**\n` +
+              `• Mid (€300-€550): β = **-2.8556** (steepest — most price-sensitive)\n` +
+              `• Premium (P>€550): β = **-0.9580**\n` +
               `• Also: **35.6%** of TW orders are pre-bundled (supply-side), only **22.1%** organic cross-sell\n`) +
           `\nCross-market: HK (${d.avg_attachment_rate}%, β=${d.attachment_beta}) vs ${other} (${otherD.avg_attachment_rate}%, β=${otherD.attachment_beta}) — fundamentally **opposite** attachment dynamics.`,
-        source: 'Attachment Rate Model (Ch.3 Ridge Logistic Regression, α=1e-6)',
+        source: 'Attachment Rate Model (v02 Ch.3 Logistic Regression, MLE)',
       };
     },
   },
@@ -197,7 +197,7 @@ const INTENTS = [
       const hk = MARKET_DATA.HK;
       const tw = MARKET_DATA.TW;
       return {
-        text: `**Hong Kong vs Taiwan — Head-to-Head Comparison:**\n\n` +
+        text: `**Hong Kong vs Taiwan — Head-to-Head Comparison (v02)**:\n\n` +
           `| Metric | Hong Kong | Taiwan |\n` +
           `|--------|-----------|--------|\n` +
           `| Orders | ${hk.total_orders.toLocaleString()} | ${tw.total_orders.toLocaleString()} (4.3x) |\n` +
@@ -210,7 +210,7 @@ const INTENTS = [
           `**Key insight**: Taiwan drives 4.6x more volume but the markets have **opposite attachment dynamics** — ` +
           `HK's positive β means price increases HELP cross-sell (Simpson's paradox), while TW's negative per-segment slopes mean price increases HURT cross-sell. ` +
           `Combined: **${(hk.total_orders + tw.total_orders).toLocaleString()} orders** and **$43M+ revenue**.`,
-        source: 'Cross-Market Analysis (aggregated from 271K+ CSV rows)',
+        source: 'Cross-Market Analysis (v02, aggregated from 271K+ CSV rows)',
       };
     },
   },
@@ -255,20 +255,20 @@ const INTENTS = [
     patterns: [/method/i, /how.*model/i, /how.*work/i, /explain.*model/i, /formula/i, /approach/i, /thesis/i],
     handler: (query, market) => {
       return {
-        text: `**BAMP Engine Methodology — Aligned with Notebook Chapters:**\n\n` +
-          `**1. Attachment Rate Model (Ch.3)**: Ridge logistic regression (α=1e-6)\n` +
-          `   HK: β=+0.50 (positive — Simpson's paradox)\n` +
-          `   TW: Entry β=-1.37, Mid β=-2.86, Premium β=-0.98\n\n` +
+        text: `**BAMP Engine Methodology — Aligned with Notebook v02 Chapters:**\n\n` +
+          `**1. Attachment Rate Model (Ch.3)**: MLE logistic regression (no regularization)\n` +
+          `   HK: β=+0.6316 (positive — Simpson's paradox)\n` +
+          `   TW: Entry β=-1.3703, Mid β=-2.8556, Premium β=-0.9580\n\n` +
           `**2. Revenue Optimization (Ch.4-5)**: Traffic-adjusted simulation\n` +
           `   Ch.4: No interior optimum without traffic data\n` +
-          `   Ch.5: With traffic: HK €524, TW Entry €365, Mid €364, Premium €502\n\n` +
+          `   Ch.5: With traffic: HK €559, TW Entry €398, Mid €396, Premium €506\n\n` +
           `**3. Competitor Pricing (Ch.6)**: OVB correction\n` +
           `   Gap β: HK=-1.83, TW=-2.32 (relative price matters more than absolute)\n\n` +
           `**4. Bundle Decomposition (Ch.7)**: Supply vs demand-side\n` +
           `   TW: 35.6% pre-bundled (supply), 22.1% organic cross-sell (demand)\n\n` +
           `**5. Incrementality Model**: Log-linear demand with β₂ coefficients\n` +
           `   Identifies which accessories cannibalize vs. grow mattress demand`,
-        source: 'BAMP Methodology (Notebook Ch.3-7 + Engine AI features)',
+        source: 'BAMP Methodology (Notebook v02 Ch.3-7 + Engine AI features)',
       };
     },
   },

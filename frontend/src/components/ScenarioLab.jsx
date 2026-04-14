@@ -6,7 +6,7 @@ import {
 import InsightCard from './InsightCard';
 
 /**
- * F4: Predictive Scenario Engine ("Scenario Lab")
+ * F4: Predictive Scenario Engine ("Scenario Lab") — Aligned with Notebook v02
  *
  * Autonomously explores thousands of parameter combinations across the
  * three-dimensional simulator space (price × marketing × competitor gap)
@@ -27,14 +27,14 @@ const OBJECTIVES = [
   { id: 'efficiency', label: 'Best Revenue/Spend Ratio', key: 'revenuePerSpend' },
 ];
 
-// Core simulator — aligned with notebook Ch.3-5 logistic attachment model
+// Core simulator — aligned with notebook v02 Ch.3-5 logistic attachment model
 // Uses HK parameters by default (market selector can be added later)
 function simulate(price, marketing, gap) {
-  // HK defaults from notebook Cell 54: const=-3.5607, β=+0.4998, optimal €524
-  const optimalPrice = 524;
-  const beta = 0.4998;
-  const intercept = -3.5607;
-  const medianPrice = 566.83;
+  // HK defaults from notebook v02 Cell 54 (MLE, no regularization): const=-4.4104, β=+0.6316, optimal €559
+  const optimalPrice = 559;
+  const beta = 0.6316;
+  const intercept = -4.4104;
+  const medianPrice = 567.49;
 
   // Logistic attachment model from Ch.3: z = const + β × log(price)
   const z = intercept + beta * Math.log(price);

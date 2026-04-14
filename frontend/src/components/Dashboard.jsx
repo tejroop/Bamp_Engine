@@ -17,8 +17,8 @@ import InsightCard from './InsightCard';
  *   - SKU labelling.xlsx / 260128_Bundle Naming.xlsx
  */
 
-// Real KPI data — aligned with notebook regression results
-// Attachment rates = P(accessory | mattress order) from Ch.3 logistic model
+// Real KPI data — aligned with notebook v02 regression results
+// Attachment rates = P(accessory | mattress order) from Ch.3 logistic model (MLE, no regularization)
 // Elasticity = implied from Ch.4-5 revenue simulation
 const KPI_DATA = {
   HK: {
@@ -26,13 +26,13 @@ const KPI_DATA = {
     total_revenue: 8840669,
     currency: 'HKD',
     symbol: 'HK$',
-    avg_attachment_rate: 41.3,   // P(acc|mattress) from notebook Ch.3 Cell 49
-    attachment_slope: '+0.50',   // β positive — higher price → MORE attachment (Simpson's paradox)
+    avg_attachment_rate: 41.3,   // P(acc|mattress) from notebook v02 Ch.3 Cell 49
+    attachment_slope: '+0.6316', // β positive (v02) — higher price → MORE attachment (Simpson's paradox)
     date_range: 'Jan 2023 – Mar 2025',
     months_processed: 27,
     incrementality: 3.56,    // EPWGM β₂ from incrementality model
     elasticity: -0.95,
-    optimal_price: 524,      // Traffic-adjusted revenue optimum (Ch.5)
+    optimal_price: 559,      // Traffic-adjusted revenue optimum (v02 Ch.5)
     top_product: 'EPWFP (Foam Pillow, 5,151 units)',
     top_mattress: 'EMAHE (941 units, avg HK$681)',
     competitors: ['Ecosa', 'Origin', 'Skyler', 'Hushhome'],
@@ -62,15 +62,15 @@ const KPI_DATA = {
     total_revenue: 32862634,
     currency: 'TWD',
     symbol: 'NT$',
-    avg_attachment_rate: 48.6,   // M+A composition share from notebook Cell 18 (38,961 of 74,139 orders)
-    attachment_slope: 'negative', // β negative per segment (Entry -1.37, Mid -2.86, Premium -0.98)
+    avg_attachment_rate: 48.6,   // M+A composition share from notebook v02 Cell 18 (38,961 of 74,139 orders)
+    attachment_slope: 'negative', // β negative per segment (v02: Entry -1.3703, Mid -2.8556, Premium -0.9580)
     date_range: 'Jan 2023 – Mar 2025',
     months_processed: 27,
     incrementality: 1.62,
     elasticity: -1.08,
-    optimal_price_entry: 365,    // Traffic-adjusted optima (Ch.5) by segment — Cell 77
-    optimal_price_mid: 364,      // interior optimum
-    optimal_price_premium: 502,  // lower_bound
+    optimal_price_entry: 398,    // Traffic-adjusted optima (v02 Ch.5) by segment — Cell 77
+    optimal_price_mid: 396,      // interior optimum
+    optimal_price_premium: 506,  // lower_bound
     top_product: 'EPWTW (Travel Pillow, 57,221 units)',
     top_mattress: 'EMAHE (11,549 units, avg NT$410)',
     competitors: ['Lunio', 'Lovefu', 'Mr. Living', 'Sleepy Tofu'],
@@ -233,18 +233,18 @@ export default function Dashboard({ market = 'HK' }) {
       <InsightCard
         headline={
           market === 'HK'
-            ? `HK: Positive attachment slope (β=${d.attachment_slope}) — higher-priced SKUs sell MORE accessories (Simpson's paradox)`
-            : `TW: ${d.avg_attachment_rate}% attachment with negative per-segment slopes — discount-driven volume market`
+            ? `HK: Positive attachment slope (β=${d.attachment_slope}) — higher-priced SKUs sell MORE accessories (Simpson's paradox, v02)`
+            : `TW: ${d.avg_attachment_rate}% attachment with negative per-segment slopes (v02) — discount-driven volume market`
         }
         body={
           market === 'HK'
-            ? `Hong Kong generated ${d.symbol}${(d.total_revenue / 1000000).toFixed(1)}M from ${d.total_orders.toLocaleString()} orders over ${d.months_processed} months. The ${d.avg_attachment_rate}% conditional attachment rate (P(accessory|mattress)) masks a counter-intuitive finding: the market-level attachment slope is positive (β=${d.attachment_slope}), meaning higher-priced SKUs actually sell more accessories. This is Simpson's paradox — within segments the betas are negative, but composition effects (premium buyers are also heavy cross-sellers) flip the sign at market level. The traffic-adjusted revenue-maximizing price is €${d.optimal_price}. With inelastic demand (ε=${d.elasticity}), premium positioning is viable.`
-            : `Taiwan generated ${d.symbol}${(d.total_revenue / 1000000).toFixed(1)}M from ${d.total_orders.toLocaleString()} orders — over 4.6x the volume of Hong Kong. The ${d.avg_attachment_rate}% M+A composition rate is 7.3pp higher than HK's ${KPI_DATA.HK.avg_attachment_rate}% conditional attach rate, but per-segment slopes are all negative (Entry β=-1.37, Mid β=-2.86, Premium β=-0.98) — higher prices suppress attachment within each segment. The Mid segment is most sensitive. Traffic-adjusted revenue optima vary by segment: Entry €${d.optimal_price_entry}, Mid €${d.optimal_price_mid}, Premium €${d.optimal_price_premium}. TW also has 35.6% pre-bundled orders (supply-side) vs 22.1% organic cross-sell (demand-side).`
+            ? `Hong Kong generated ${d.symbol}${(d.total_revenue / 1000000).toFixed(1)}M from ${d.total_orders.toLocaleString()} orders over ${d.months_processed} months. The ${d.avg_attachment_rate}% conditional attachment rate (P(accessory|mattress)) masks a counter-intuitive finding: the market-level attachment slope is positive (β=${d.attachment_slope}), meaning higher-priced SKUs actually sell more accessories. This is Simpson's paradox — within segments the betas are negative, but composition effects (premium buyers are also heavy cross-sellers) flip the sign at market level. The traffic-adjusted revenue-maximizing price is €${d.optimal_price} (v02). With inelastic demand (ε=${d.elasticity}), premium positioning is viable.`
+            : `Taiwan generated ${d.symbol}${(d.total_revenue / 1000000).toFixed(1)}M from ${d.total_orders.toLocaleString()} orders — over 4.6x the volume of Hong Kong. The ${d.avg_attachment_rate}% M+A composition rate is 7.3pp higher than HK's ${KPI_DATA.HK.avg_attachment_rate}% conditional attach rate, but per-segment slopes are all negative (v02: Entry β=-1.3703, Mid β=-2.8556, Premium β=-0.9580) — higher prices suppress attachment within each segment. The Mid segment is most sensitive. Traffic-adjusted revenue optima vary by segment: Entry €${d.optimal_price_entry}, Mid €${d.optimal_price_mid}, Premium €${d.optimal_price_premium}. TW also has 35.6% pre-bundled orders (supply-side) vs 22.1% organic cross-sell (demand-side).`
         }
         recommendation={
           market === 'HK'
             ? `Leverage HK's positive attachment slope: price increases on premium mattresses will not hurt accessory attach. Target €${d.optimal_price} price point for revenue maximization. Investigate whether the Simpson's paradox finding can inform segment-specific bundle strategies.`
-            : `TW's Mid segment has the steepest negative slope (β=-2.86) — avoid price increases there without compensating promotions. Focus on shifting the 35.6% supply-side bundles toward organic cross-sell to improve margin. Entry segment optimum (€${d.optimal_price_entry}) suggests room for value positioning.`
+            : `TW's Mid segment has the steepest negative slope (β=-2.8556) — avoid price increases there without compensating promotions. Focus on shifting the 35.6% supply-side bundles toward organic cross-sell to improve margin. Entry segment optimum (€${d.optimal_price_entry}) suggests room for value positioning.`
         }
         comparison={`HK (${KPI_DATA.HK.total_orders.toLocaleString()} orders, ${KPI_DATA.HK.avg_attachment_rate}% attach, β=${KPI_DATA.HK.attachment_slope}) vs TW (${KPI_DATA.TW.total_orders.toLocaleString()} orders, ${KPI_DATA.TW.avg_attachment_rate}% attach, β=negative). Key divergence: HK's positive market-level slope is a Simpson's paradox artifact; TW's segment-level slopes are consistently negative. Combined: ${(KPI_DATA.HK.total_orders + KPI_DATA.TW.total_orders).toLocaleString()} orders, $43M+ revenue.`}
         sentiment={market === 'HK' ? 'positive' : 'neutral'}
